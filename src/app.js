@@ -15,6 +15,8 @@ import path from "path";
 import prisma from "./config/db.js";
 import corsOptions from "./config/cors.js";
 import AuthRoutes from "./domains/auth/auth-routes.js";
+import gymRoute from "./domains/gym/gym.route.js";
+import gymPenjagaRoute from "./domains/gym/penjaga/gym-penjaga.route.js";
 
 class ExpressApplication {
     app;
@@ -43,10 +45,13 @@ class ExpressApplication {
             multer({
                 storage: this.fileStorage,
                 fileFilter: this.fileFilter,
+                limits: {
+                    fileSize: 5 * 1024 * 1024
+                }
             }).fields([
                 {
                 name: "image",
-                maxCount: 1,
+                maxCount: 10,
                 },
             ])
         );
@@ -54,7 +59,7 @@ class ExpressApplication {
         this.app.use(express.json({ type: "application/json", limit: "50mb" }));
         this.app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 
-        this.app.use(cors(corsOptions));
+        this.app.use(cors(corsOptions)); 
         //  __init__
 
         this.configureAssets();
@@ -85,6 +90,8 @@ class ExpressApplication {
     setupRoute() {
         // Set Route here base (/api/v1)
         this.app.use("/api/v1/auth", AuthRoutes);
+        this.app.use("/api/v1/gym/gym-staff", gymPenjagaRoute)
+        this.app.use("/api/v1/gym", gymRoute);
         
 
     }
