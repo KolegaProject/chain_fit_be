@@ -111,4 +111,5 @@ const emailResetPasswordSchema = Joi.object({
         }),
 });
 
+
 export { loginSchema, registerSchema, profileSchema, changePasswordSchema, refreshTokenSchema, resetPasswordSchema, emailResetPasswordSchema };

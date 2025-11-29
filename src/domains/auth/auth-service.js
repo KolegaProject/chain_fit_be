@@ -5,16 +5,64 @@ import { parseJWT, generateToken } from "../../utils/jwtTokenConfig.js";
 import joi from "joi";
 import prisma from "../../config/db.js";
 import { hashPassword, matchPassword } from "../../utils/passwordConfig.js";
+import { uploadFile } from "../../utils/saveImage.js";
 
 
 class AuthService {
 
+    async registerOwner(userData){
+        const emailExist = await prisma.user.findUnique({
+            where: {
+                email: userData.email
+            }
+        });
 
-    // admin
-    
-    // owner
+        const usernameExist = await prisma.user.findUnique({
+            where: {
+                username: userData.username,
+            }
+        })
 
-    // member
+        if (emailExist || usernameExist) {
+            let validation = "";
+            let stack = [];
+
+            if (usernameExist) {
+                validation = "Username already taken.";
+
+                stack.push({
+                    message: "Username already taken.",
+                    path: ["username"]
+                });
+            }
+
+            if (emailExist) {
+                validation += "Email already taken.";
+
+                stack.push({
+                    message: "Email already taken.",
+                    path: ["email"]
+                });
+            }
+            throw new joi.ValidationError(validation, stack);
+        }
+
+        userData.role = "OWNER"
+        userData.password = await hashPassword(userData.password);
+        const createdUser = await prisma.user.create({
+            data: userData
+        });
+
+        if (!createdUser) {
+            throw Error("Failed to register");
+        } 
+        return {message: "User registered successfully."};
+
+
+    }
+
+
+    // all user
     async login(username, password) {
         let user = await prisma.user.findFirst({
             where: {
@@ -38,20 +86,6 @@ class AuthService {
             throw BaseError.badRequest("Invalid credentials");
         }
 
-        if (!user.verifiedAt){
-            const token = generateToken(user.id, "5m");
-            const verificationLink = `${process.env.BE_URL}/api/v1/auth/verify/${token}`;
-            const emailHtml = generateVerifEmail(verificationLink);
-
-            sendEmail(
-                user.email,
-                "Verifikasi Email dari Test: Test Channel",
-                "Terima kasih telah mendaftar di Test: Test Channel! Untuk melanjutkan, silakan verifikasi email Anda dengan mengklik tautan berikut:",
-                emailHtml
-            );
-
-            throw BaseError.badRequest("Email not verified, Please check your email to verify your account.");
-        }
 
         const accessToken = generateToken({id: user.id, account_type: user.role}, "1d");
         const refreshToken = generateToken(user.id, "365d");
@@ -59,6 +93,8 @@ class AuthService {
         return { access_token: accessToken, refresh_token: refreshToken };
     }
 
+
+    // register user
     async register(data) {
         const emailExist = await prisma.user.findUnique({
             where: {
@@ -105,56 +141,11 @@ class AuthService {
             throw Error("Failed to register");
         }
 
-        const token = generateToken(createdUser.id, "5m");
-        const verificationLink = `${process.env.BE_URL}/api/v1/auth/verify/${token}`;
-        
-        const emailHtml = generateVerifEmail(verificationLink);
 
-        sendEmail(
-                createdUser.email,
-                "Verifikasi Email dari Test: Test Channel",
-                "Terima kasih telah mendaftar di Test: Test Channel! Untuk melanjutkan, silakan verifikasi email Anda dengan mengklik tautan berikut:",
-                emailHtml
-        );
-
-        return {message: "User registered successfully. Please check your email to verify your account."};
+        return {message: "User registered successfully."};
     }
 
-    async verify(token) {
-        const decoded = parseJWT(token);
-        
-        if (!decoded) {
-            return { status: 400, message: "Invalid token" };
-        }
-        console.log(decoded.id);
-        
-
-        const user = await  prisma.user.findUnique({
-            where: {
-                id: decoded.id
-            }
-        });
-
-        if (!user) {
-            return { status: 400, message: "User Not Found" }
-        }
-
-        if (user.verifiedAt){
-            return { status: 400, message: "Email already verified" };
-        }
-
-        await prisma.user.update({
-            where: {
-                id: user.id
-            },
-            data: {
-                verifiedAt: new Date()
-            }
-        });
-
-        return { status: 200, message: "Email verified successfully" };
-    }
-
+    
     async getProfile(id) {
         const user = await prisma.user.findUnique({
             where: {
@@ -165,6 +156,7 @@ class AuthService {
                 username: true,
                 role: true,
                 email: true,
+                profileImage: true,                
             }
         });
 
@@ -175,7 +167,7 @@ class AuthService {
         return user;
     }
 
-    async updateProfile(id, data) {
+    async updateProfile(id, data, imgProfile) {
         const user = await prisma.user.findUnique({
             where: {
                 id: id
@@ -185,6 +177,33 @@ class AuthService {
         if (!user) {
             throw BaseError.notFound("User not found");
         }
+        if(data.email){
+            const emailExist = await prisma.user.findUnique({
+                where: {
+                    email: data.email
+                }
+            });
+            if (emailExist) {
+                let validation = "Email already taken.";
+                let message = {
+                        message: "Email already taken.",
+                        path: ["email"]
+                };
+                throw new joi.ValidationError(validation, message);
+            }
+        }
+
+
+        if(imgProfile){
+            const profileUserUrl = `profile-user/${user.id}`;
+            const uploadImageUrl = await uploadFile(profileUserUrl, imgProfile);
+            if (!uploadImageUrl || !uploadImageUrl.length) {
+                throw new Error("failed to upload image");
+            }
+
+            data.profileImage = uploadImageUrl[0];
+        }
+
         const updatedUser = await prisma.user.update({
             where: {
                 id: user.id
@@ -193,7 +212,7 @@ class AuthService {
             select: {
                 id: true,
                 username: true,
-                name: true,
+                name: true
             }
         });
 
@@ -346,6 +365,42 @@ class AuthService {
 
         return {message: "Password reset succesfully"}
     }
+
+    // async verify(token) {
+    //     const decoded = parseJWT(token);
+        
+    //     if (!decoded) {
+    //         return { status: 400, message: "Invalid token" };
+    //     }
+    //     console.log(decoded.id);
+        
+
+    //     const user = await  prisma.user.findUnique({
+    //         where: {
+    //             id: decoded.id
+    //         }
+    //     });
+
+    //     if (!user) {
+    //         return { status: 400, message: "User Not Found" }
+    //     }
+
+    //     if (user.verifiedAt){
+    //         return { status: 400, message: "Email already verified" };
+    //     }
+
+    //     await prisma.user.update({
+    //         where: {
+    //             id: user.id
+    //         },
+    //         data: {
+    //             verifiedAt: new Date()
+    //         }
+    //     });
+
+    //     return { status: 200, message: "Email verified successfully" };
+    // }
+
 }
 
 export default new AuthService();

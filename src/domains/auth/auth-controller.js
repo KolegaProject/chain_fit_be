@@ -14,6 +14,20 @@ class AuthController {
         return successResponse(res, response);
     }
 
+    async registerOwner(req, res){
+        const {name, username, email, password} = req.body;
+
+        // const img = req.files.image;
+
+        const response = await AuthService.registerOwner({name, username, email, password});
+
+        if (!response) {
+            throw Error("Failed to register");
+        }
+
+        return successResponse(res, response);
+    }
+
     async register(req, res) {
 
         const { name, username, password, email} = req.body;
@@ -26,18 +40,18 @@ class AuthController {
         return successResponse(res, message);
     }
 
-    async verify(req, res) {
-        const { token } = req.params;
+    // async verify(req, res) {
+    //     const { token } = req.params;
 
-        const response = await AuthService.verify(token);
+    //     const response = await AuthService.verify(token);
 
-        if (response.status !== 200) {
-            return res.redirect(`${process.env.FE_URL}/login?verify=failed&message=${response.message}`);
-        }
+    //     if (response.status !== 200) {
+    //         return res.redirect(`${process.env.FE_URL}/login?verify=failed&message=${response.message}`);
+    //     }
 
-        return res.redirect(`${process.env.FE_URL}/login?verify=success`);
+    //     return res.redirect(`${process.env.FE_URL}/login?verify=success`);
 
-    }
+    // }
 
     async getProfile(req, res){
         const user = await AuthService.getProfile(req.user.id);
@@ -50,9 +64,13 @@ class AuthController {
     }
 
     async updateProfile(req, res){
-        const { fullName, username, birthDate } = req.body;
+        const { email, name } = req.body;
+        let imageProfile = null;
+        if(req.files){
+            imageProfile = req.files.image;
 
-        const user = await AuthService.updateProfile(req.user.id, { fullName, username, birthDate });
+        }
+        const user = await AuthService.updateProfile(req.user.id, { name, email }, imageProfile);
 
         if (!user) {
             throw Error("Failed to update user profile");
