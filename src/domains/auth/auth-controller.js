@@ -40,18 +40,6 @@ class AuthController {
         return successResponse(res, message);
     }
 
-    // async verify(req, res) {
-    //     const { token } = req.params;
-
-    //     const response = await AuthService.verify(token);
-
-    //     if (response.status !== 200) {
-    //         return res.redirect(`${process.env.FE_URL}/login?verify=failed&message=${response.message}`);
-    //     }
-
-    //     return res.redirect(`${process.env.FE_URL}/login?verify=success`);
-
-    // }
 
     async getProfile(req, res){
         const user = await AuthService.getProfile(req.user.id);
