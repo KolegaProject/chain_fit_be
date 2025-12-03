@@ -54,6 +54,11 @@ const getPenjagaSchema = Joi.object({
         "number.min": "User id gym must be number at least 1",
         "string.base": "User id gym must be int"
     }),
+    id: Joi.number().min(1).required().messages({
+        "number.empty": "Id gym is required",
+        "number.min": "Id gym must be number at least 1",
+        "number.base": "Id gym must be int"
+    })
 });
 
 

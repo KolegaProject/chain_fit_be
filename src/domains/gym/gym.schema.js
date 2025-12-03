@@ -36,10 +36,10 @@ const createGymSchema = Joi.object({
             "string.min": "Gym name must be at least 2 characters long.",
             "string.base": "Gym name can only contain letters and spaces."
     }),
-    maxCapacity: Joi.string().min(1).required().messages({
-            "string.empty": "Max capacity gym is required",
-            "string.min": "Max capacity gym must be number at least 1",
-            "string.base": "Max capacity gym must be int"
+    maxCapacity: Joi.number().min(1).required().messages({
+            "number.empty": "Max capacity gym is required",
+            "number.min": "Max capacity gym must be number at least 1",
+            "number.base": "Max capacity gym must be int"
     }),
     address: Joi.string().min(4).max(150)
         .messages({

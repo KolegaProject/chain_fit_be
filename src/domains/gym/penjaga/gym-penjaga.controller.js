@@ -6,14 +6,16 @@ class GymPenjagaController {
     async createPenjaga(req, res){
         const {username, name, email, password} = req.body;
         const ownerId = req.user.id;
-        const penjaga = await gymPenjagaService.createPenjagaGym({username, name, email, password}, ownerId);
+        const gymId = parseInt(req.params.id)
+        const penjaga = await gymPenjagaService.createPenjagaGym({username, name, email, password}, ownerId, gymId);
         return createdResponse(res, penjaga);
     }
 
     async deletePenjaga(req, res){
         const {userId} = req.body;
         const ownerId = req.user.id;
-        const penjaga = await gymPenjagaService.deletePenjagaGym(userId, ownerId);
+        const gymId = parseInt(req.params.id)
+        const penjaga = await gymPenjagaService.deletePenjagaGym(userId, ownerId, gymId);
         return successResponse(res, penjaga);
     }
 
@@ -21,14 +23,14 @@ class GymPenjagaController {
         const ownerId = req.user.id;
         
         // gym id
-        const {id} = req.body;
+        const id = parseInt(req.params.id);
         
         const penjaga = await gymPenjagaService.getAllPenjaga({ownerId, id});
         return successResponse(res, penjaga);
     }
-
+    
     async show(req, res){
-        const {id} = req.body;
+        const id = parseInt(req.params.id);
         const userId = parseInt(req.params.userId);
         const ownerId = req.user.id;
         const penjaga = await gymPenjagaService.getPenjagaById({userId, id, ownerId})
@@ -43,6 +45,7 @@ class GymPenjagaController {
 
     async update(req, res){
         const {name, email, password} = req.body;
+        const id = parseInt(req.params.id)
         let imageProfile = null;
         if(req.files){
             imageProfile = req.files.image;
@@ -63,6 +66,7 @@ class GymPenjagaController {
         if(new_password !== confirm_password){
             throw Error("Failed to update staff password")
         }
+        const gymId = parseInt(req.params.id)
         const id = parseInt(req.params.userId);
         const ownerId = req.user.id;
         

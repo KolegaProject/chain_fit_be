@@ -6,10 +6,11 @@ import { uploadFile } from "../../../utils/saveImage.js";
 
 class GymPenjagaService {
 
-    async createPenjagaGym(data, ownerId){
+    async createPenjagaGym(data, ownerId, gymId){
         const checkGym = await prisma.gym.findFirst({
             where: {
-                ownerId
+                id: gymId,
+                ownerId,
             }
         });
         if(!checkGym) throw BaseError.notFound("gym not found");
@@ -64,13 +65,14 @@ class GymPenjagaService {
         return {message: "Succefully create penjaga", data: user};
     }
 
-    async deletePenjagaGym(userId, ownerId){
+    async deletePenjagaGym(userId, ownerId, gymId){
         const findUser = await prisma.user.findFirst({
             where: {
                 id: userId,
                 role: "PENJAGA",
                 gym: {
-                    ownerId: ownerId
+                    ownerId: ownerId,
+                    id: gymId
                 }
             }
         });

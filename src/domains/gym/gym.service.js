@@ -80,7 +80,12 @@ class GymService {
                 id: true,
                 address: true,
                 jamOperasional: true,
-                gymImage: true
+                gymImage: {
+                    select: {
+                        id: true,
+                        url: true
+                    }
+                }
             }
         })
         return gym;
@@ -93,7 +98,12 @@ class GymService {
                 isVerified: true
             },
             include: {
-                gymImage: true
+                gymImage: {
+                    select: {
+                        id: true,
+                        url: true
+                    }
+                }
             }
         })
         if(!gym) throw BaseError.notFound("gym not found");
