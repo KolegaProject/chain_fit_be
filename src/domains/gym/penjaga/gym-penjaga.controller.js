@@ -3,7 +3,7 @@ import gymPenjagaService from "./gym-penjaga.service.js";
 
 class GymPenjagaController {
 
-    async createPenjaga(req, res){
+    async createPenjaga(req, res){ 
         const {username, name, email, password} = req.body;
         const ownerId = req.user.id;
         const gymId = parseInt(req.params.id)

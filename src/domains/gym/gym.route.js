@@ -117,7 +117,7 @@ class GymRoutes extends BaseRoutes {
 
     this.router.get("/", [
       authTokenMiddleware.authenticate,
-      authTokenMiddleware.authorizeUser(["OWNER", "MEMBER"]),
+      authTokenMiddleware.authorizeUser(["OWNER", "MEMBER", "PENJAGA"]),
       tryCatch(gymController.index),
     ]);
 
@@ -133,7 +133,7 @@ class GymRoutes extends BaseRoutes {
     // ========== Detail & delete by id  ==========
     this.router.get("/:id", [
       authTokenMiddleware.authenticate,
-      authTokenMiddleware.authorizeUser(["OWNER", "MEMBER"]),
+      authTokenMiddleware.authorizeUser(["OWNER", "MEMBER", "PENJAGA"]),
       validateCredentials(gymSchema, "params"),
       tryCatch(gymController.show),
     ]);
