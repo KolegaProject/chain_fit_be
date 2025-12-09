@@ -41,7 +41,7 @@ jobs:
             docker run -d \
               --name chain_fit_be-server \
               --network db-network \
-              -p 4001:4001 \
+              -p 4002:4002 \
               -e DATABASE_URL="mysql://root:rootpass@mysql-container-a:3306/gym_be" \
               -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
               -e PORT="${{ secrets.PORT }}" \
