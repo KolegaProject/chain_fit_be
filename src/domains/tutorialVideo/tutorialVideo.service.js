@@ -6,19 +6,23 @@ class TutorialVideoService {
   // Helper: Dapatkan Gym ID milik Owner
   async _getAuthorizedGymIds(user) {
     if (user.role === 'OWNER') {
-      const gym = await prisma.gym.findFirst({
+      const gyms = await prisma.gym.findMany({
         where: { ownerId: user.id },
         select: { id: true }
       });
-      if (!gym) throw BaseError.notFound('Gym tidak ditemukan untuk Owner ini');
-      return [gym.id];
-    } 
+      
+      if (gyms.length === 0) {
+        throw BaseError.notFound('Anda tidak memiliki gym');
+      }
+
+      return gyms.map(g => g.id);
+    }
     
     else if (user.role === 'MEMBER') {
       const memberships = await prisma.membership.findMany({
         where: {
           userId: user.id,
-          status: 'ACTIVE',
+          status: 'AKTIF',
           endDate: { gte: new Date() }
         },
         select: { gymId: true }
@@ -36,29 +40,24 @@ class TutorialVideoService {
     }
   }
 
-  // Helper: Pastikan Equipment ada di Gym milik Owner
-  async _validateEquipmentOwnership(gymId, equipmentId) {
-    const equipment = await prisma.equipment.findFirst({
-      where: {
-        id: equipmentId,
-        gymId: gymId
-      }
-    });
-
-    if (!equipment) {
-      throw BaseError.notFound('Equipment tidak ditemukan di gym Anda');
-    }
-  }
-
   // 1. Create Video
   async create(ownerId, data) {
-    const gymId = await this._getOwnerGymId(ownerId);
-    
-    await this._validateEquipmentOwnership(gymId, data.equipmentId);
+    const targetEquipment = await prisma.equipment.findUnique({
+      where: { id: data.equipmentId },
+      include: { gym: true }
+    });
+
+    if (!targetEquipment) {
+      throw BaseError.notFound('Equipment tidak ditemukan');
+    }
+
+    if (targetEquipment.gym.ownerId !== ownerId) {
+      throw BaseError.forbidden('Anda tidak memiliki akses ke equipment gym ini');
+    }
 
     return await prisma.tutorialVideo.create({
       data: {
-        gymId: gymId,
+        gymId: targetEquipment.gymId,
         equipmentId: data.equipmentId,
         title: data.title,
         url: data.url,
@@ -91,6 +90,9 @@ class TutorialVideoService {
         include: {
           equipment: {
             select: { id: true, name: true, photo: true }
+          },
+          gym: {
+            select: { id: true, name: true } 
           }
         }
       }),
@@ -136,12 +138,30 @@ class TutorialVideoService {
 
   // 4. Update Video
   async update(ownerId, videoId, data) {
-    const gymId = await this._getOwnerGymId(ownerId);
+    const video = await prisma.tutorialVideo.findFirst({
+      where: { id: parseInt(videoId) },
+      include: { gym: true }
+    });
 
-    const existingVideo = await this.findOne(ownerId, videoId);
+    if (!video) throw BaseError.notFound('Video tidak ditemukan');
+    
+    if (video.gym.ownerId !== ownerId) {
+      throw BaseError.forbidden('Anda tidak berhak mengedit video ini');
+    }
 
-    if (data.equipmentId && data.equipmentId !== existingVideo.equipmentId) {
-      await this._validateEquipmentOwnership(gymId, data.equipmentId);
+    if (data.equipmentId && data.equipmentId !== video.equipmentId) {
+        const targetEquipment = await prisma.equipment.findUnique({
+            where: { id: data.equipmentId },
+            include: { gym: true }
+        });
+
+        if (!targetEquipment || targetEquipment.gym.ownerId !== ownerId) {
+            throw BaseError.unauthorized('Equipment tujuan tidak valid atau bukan milik Anda');
+        }
+        
+        if (targetEquipment.gymId !== video.gymId) {
+             throw BaseError.forbidden('Equipment harus berada di gym yang sama');
+        }
     }
 
     return await prisma.tutorialVideo.update({
@@ -152,7 +172,16 @@ class TutorialVideoService {
 
   // 5. Delete Video
   async delete(ownerId, videoId) {
-    await this.findOne(ownerId, videoId);
+    const video = await prisma.tutorialVideo.findFirst({
+      where: { id: parseInt(videoId) },
+      include: { gym: true }
+    });
+
+    if (!video) throw  BaseError.notFound('Video tidak ditemukan');
+
+    if (video.gym.ownerId !== ownerId) {
+      throw BaseError.forbidden('Anda tidak berhak menghapus video ini');
+    }
 
     return await prisma.tutorialVideo.delete({
       where: { id: parseInt(videoId) }
