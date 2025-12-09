@@ -1,43 +1,50 @@
-const express = require('express');
-const router = express.Router();
-const equipmentController = require('./equipment.controller');
+import BaseRoutes from "../../base_classes/base-route.js";
+import equipmentController from "./equipment.controller.js";
+import tryCatch from "../../utils/tryCatcher.js";
+import validateCredentials from "../../middlewares/validate-credentials-middleware.js";
 import authTokenMiddleware from "../../middlewares/auth-token-middleware.js";
+import {createEquipment,updateEquipment, queryEquipment,} from "./equipment.schema.js";
 
 class EquipmentRoutes extends BaseRoutes {
-     routes() {
-        this.router.get("/:id/gym-staff", [
-            authTokenMiddleware.authenticate,
-            authTokenMiddleware.authorizeUser(["PENJAGA"]),
-            validateCredentials(gymSchema, "params"),
-            tryCatch(gymPenjagaController.index),
-        ]);
-    }
+  routes() {
+    // 1. Create Equipment
+    this.router.post("/",
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(['OWNER']),
+      validateCredentials(createEquipment),
+      tryCatch(equipmentController.create)
+    );
+
+    // 2. Get All Equipment (Pagination)
+    this.router.get("/",
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(['OWNER' || 'PENJAGA']),
+      validateCredentials(queryEquipment),
+      tryCatch(equipmentController.findAll)
+    );
+
+    // 3. Get One Equipment
+    this.router.get("/:id",
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(['OWNER']),
+      tryCatch(equipmentController.findOne)
+    );
+
+    // 4. Update Equipment
+    this.router.patch("/:id",
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(['OWNER']),
+      validateCredentials(updateEquipment),
+      tryCatch(equipmentController.update)
+    );
+
+    // 5. Delete Equipment
+    this.router.delete("/:id",
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(['OWNER']),
+      tryCatch(equipmentController.delete)
+    );
+  }
 }
 
-// Middleware untuk cek role PENJAGA
-const checkPenjagaRole = (req, res, next) => {
-  if (req.user.role !== 'PENJAGA') {
-    return res.status(403).json({
-      success: false,
-      message: 'Hanya penjaga yang dapat mengakses endpoint ini'
-    });
-  }
-  next();
-};
-
-// GET - Semua orang bisa
-router.get('/gym/:gymId', authMiddleware, equipmentController.getEquipmentsByGym.bind(equipmentController));
-
-// GET - Semua orang bisa
-router.get('/:equipmentId', authMiddleware, equipmentController.getEquipmentById.bind(equipmentController));
-
-// CREATE - Hanya PENJAGA
-router.post('/gym/:gymId', authMiddleware, checkPenjagaRole, equipmentController.createEquipment.bind(equipmentController));
-
-// UPDATE - Hanya PENJAGA
-router.put('/:equipmentId', authMiddleware, checkPenjagaRole, equipmentController.updateEquipment.bind(equipmentController));
-
-// DELETE - Hanya PENJAGA
-router.delete('/:equipmentId', authMiddleware, checkPenjagaRole, equipmentController.deleteEquipment.bind(equipmentController));
-
-module.exports = router;
+export default new EquipmentRoutes().router;

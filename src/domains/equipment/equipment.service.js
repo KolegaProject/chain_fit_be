@@ -1,78 +1,125 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+import prisma from "../../config/db.js";
+import BaseError from "../../base_classes/base-error.js";
 
 class EquipmentService {
-  async createEquipment(gymId, data) {
-    try {
-      const equipment = await prisma.equipment.create({
-        data: {
-          gymId,
-          ...data
+  /**
+   * Helper untuk mendapatkan Gym milik owner.
+   * Jika owner belum punya gym, throw error.
+   */
+  async _getOwnerGym(ownerId) {
+    const gym = await prisma.gym.findFirst({
+      where: { ownerId: ownerId },
+      select: { id: true }
+    });
+
+    if (!gym) {
+      throw new BaseError('Gym tidak ditemukan untuk Owner ini', 404);
+    }
+    return gym;
+  }
+
+  // 1. Create Equipment
+  async create(ownerId, data) {
+    // Pastikan equipment dibuat di gym milik owner tersebut
+    const gym = await this._getOwnerGym(ownerId);
+
+    return await prisma.equipment.create({
+      data: {
+        gymId: gym.id,
+        name: data.name,
+        healthStatus: data.healthStatus,
+        photo: data.photo
+      }
+    });
+  }
+
+  // 2. Get All Equipment (Pagination + Search + Security Check)
+  async findAll(ownerId, query) {
+    const { page = 1, limit = 10, search } = query;
+    const skip = (page - 1) * limit;
+
+    const gym = await this._getOwnerGym(ownerId);
+
+    // Filter kondisi: Milik gym owner INI dan opsional search nama
+    const whereCondition = {
+      gymId: gym.id,
+      ...(search && {
+        name: { contains: search, mode: 'insensitive' }
+      })
+    };
+
+    const [equipments, total] = await Promise.all([
+      prisma.equipment.findMany({
+        where: whereCondition,
+        skip: parseInt(skip),
+        take: parseInt(limit),
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          healthStatus: true,
+          photo: true,
+          createdAt: true
         }
-      });
-      return equipment;
-    } catch (error) {
-      throw error;
-    }
+      }),
+      prisma.equipment.count({ where: whereCondition })
+    ]);
+
+    return {
+      data: equipments,
+      meta: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
   }
 
-  async getEquipmentByGymId(gymId) {
-    try {
-      const equipments = await prisma.equipment.findMany({
-        where: { gymId },
-        include: {
-          histories: {
-            orderBy: { createdAt: 'desc' }
-          },
-          tutorialVideos: true
+  // 3. Get One Equipment Detail
+  async findOne(ownerId, equipmentId) {
+    const equipment = await prisma.equipment.findFirst({
+      where: {
+        id: parseInt(equipmentId),
+        gym: {
+          ownerId: ownerId // SECURITY: Hanya bisa lihat jika gym-nya milik owner ini
         }
-      });
-      return equipments;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async getEquipmentById(equipmentId) {
-    try {
-      const equipment = await prisma.equipment.findUnique({
-        where: { id: equipmentId },
-        include: {
-          gym: true,
-          histories: {
-            orderBy: { createdAt: 'desc' }
-          },
-          tutorialVideos: true
+      },
+      include: {
+        histories: {
+          take: 5, // Tampilkan 5 history terakhir (opsional)
+          orderBy: { createdAt: 'desc' }
         }
-      });
-      return equipment;
-    } catch (error) {
-      throw error;
+      }
+    });
+
+    if (!equipment) {
+      throw new BaseError('Equipment tidak ditemukan atau Anda tidak memiliki akses', 404);
     }
+
+    return equipment;
   }
 
-  async updateEquipment(equipmentId, data) {
-    try {
-      const equipment = await prisma.equipment.update({
-        where: { id: equipmentId },
-        data
-      });
-      return equipment;
-    } catch (error) {
-      throw error;
-    }
+  // 4. Update Equipment
+  async update(ownerId, equipmentId, data) {
+    // Cek eksistensi dan kepemilikan dulu
+    await this.findOne(ownerId, equipmentId);
+
+    return await prisma.equipment.update({
+      where: { id: parseInt(equipmentId) },
+      data: data
+    });
   }
 
-  async deleteEquipment(equipmentId) {
-    try {
-      const equipment = await prisma.equipment.delete({
-        where: { id: equipmentId }
-      });
-      return equipment;
-    } catch (error) {
-      throw error;
-    }
+  // 5. Delete Equipment
+  async delete(ownerId, equipmentId) {
+    // Cek eksistensi dan kepemilikan dulu
+    await this.findOne(ownerId, equipmentId);
+
+    return await prisma.equipment.delete({
+      where: { id: parseInt(equipmentId) }
+    });
   }
 }
 
-module.exports = new EquipmentService();
+export default new EquipmentService();
