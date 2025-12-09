@@ -3,7 +3,7 @@ name: Auto Deploy Backend to VPS
 on:
   push:
     branches:
-      - DEV  # ganti sesuai branch deploy kamu
+      - dev  # ganti sesuai branch deploy kamu
 
 jobs:
   deploy:
