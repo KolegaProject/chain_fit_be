@@ -13,7 +13,7 @@ class EquipmentService {
     });
 
     if (!gym) {
-      throw new BaseError('Gym tidak ditemukan untuk Owner ini', 404);
+      throw BaseError.notFound('Gym tidak ditemukan untuk Owner ini');
     }
     return gym;
   }
@@ -44,7 +44,7 @@ class EquipmentService {
     const whereCondition = {
       gymId: gym.id,
       ...(search && {
-        name: { contains: search, mode: 'insensitive' }
+        name: { contains: search}
       })
     };
 
@@ -94,7 +94,7 @@ class EquipmentService {
     });
 
     if (!equipment) {
-      throw new BaseError('Equipment tidak ditemukan atau Anda tidak memiliki akses', 404);
+      throw BaseError.notFound('Equipment tidak ditemukan atau bukan milik Anda');
     }
 
     return equipment;
