@@ -26,7 +26,7 @@ jobs:
             cd /opt/chain_fit_be
 
             # Ambil kode terbaru
-            git pull origin DEV
+            git pull origin dev
             git status
             git remote -v
             git branch -vv
