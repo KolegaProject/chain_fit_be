@@ -4,11 +4,19 @@ import { hashPassword } from "../src/utils/passwordConfig.js";
 async function main() {
 console.log('🌱 Starting database seed...');
 
-  await prisma.user.delete({
+  const checkAdmin = await prisma.user.findFirst({
     where: {
       email: "admin@test.com"
     }
   })
+  if(checkAdmin){
+    await prisma.user.delete({
+      where: {
+        email: "admin@test.com"
+      }
+    })
+
+  }
 
   await prisma.user.create({
     data: {
