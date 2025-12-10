@@ -50,11 +50,18 @@ const createGymSchema = Joi.object({
     // jamOperasional
 });
 
+const queryGymSchema = Joi.object({
+    search: Joi.string().optional().messages({
+        "string.base": "Search must be a string."
+    })
+});
+
 
 
 export {
     gymSchema,
     getGymSchema,
-    createGymSchema
+    createGymSchema,
+    queryGymSchema,
 }
 

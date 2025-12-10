@@ -69,9 +69,17 @@ class GymService {
     }
 
 
-    async getAllGym(){
+    async getAllGym(search){
+        const where = {};
+        if(search){
+            where.name = {
+                contains: search,
+            }
+        }
+
         const gym = await prisma.gym.findMany({
             where: {
+                ...where,
                 isVerified: true
             },
             select: {

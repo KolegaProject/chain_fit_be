@@ -1,6 +1,6 @@
-import BaseError from "../../../base_classes/base-error.js";
-import prisma from "../../../config/db.js";
-import { snap} from "../../../config/midtrans.js";
+import BaseError from "../../base_classes/base-error.js";
+import prisma from "../../config/db.js";
+import { snap} from "../../config/midtrans.js";
 import crypto from "crypto";
 
 class MembershipTransactionService {

@@ -31,7 +31,8 @@ class GymController {
     }
 
     async index(req, res){
-        const gym = await gymService.getAllGym();
+        const search = req.query.search;
+        const gym = await gymService.getAllGym(search);
         return successResponse(res, gym);
     }
     
