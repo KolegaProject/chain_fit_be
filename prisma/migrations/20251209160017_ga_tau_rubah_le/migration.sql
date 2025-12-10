@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `equipment` MODIFY `healthStatus` ENUM('BAIK', 'BUTUH_PERAWATAN', 'RUSAK') NOT NULL DEFAULT 'BAIK';
