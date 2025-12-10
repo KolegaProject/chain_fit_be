@@ -8,7 +8,7 @@ class PaketMembershipController {
         const gymId = parseInt(req.params.id);
         const paket = await paketMemberService.createPaket({name, price, durationDays}, userId, gymId);
         return createdResponse(res, paket);
-    }
+    }   
     
     async index(req, res){
         const gymId = parseInt(req.params.id);
