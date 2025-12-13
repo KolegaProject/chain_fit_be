@@ -8,7 +8,7 @@ console.log('🌱 Starting database seed...');
     where: {
       email: "admin@test.com"
     }
-  })
+  });
   if(checkAdmin){
     await prisma.user.delete({
       where: {

@@ -9,7 +9,7 @@
 
 */
 -- AlterTable
-ALTER TABLE `gym` ADD COLUMN `latitude` DECIMAL(65, 30) NOT NULL,
+ALTER TABLE `Gym` ADD COLUMN `latitude` DECIMAL(65, 30) NOT NULL,
     ADD COLUMN `longitude` DECIMAL(65, 30) NOT NULL,
     MODIFY `maxCapacity` INTEGER NOT NULL,
     MODIFY `address` VARCHAR(191) NOT NULL,
