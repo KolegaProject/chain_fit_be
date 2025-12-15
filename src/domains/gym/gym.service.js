@@ -19,8 +19,12 @@ class GymService {
                 data: {
                     ownerId: data.ownerId,
                     name: data.namaGym,
-                    maxCapacity: data.maxCap,
-                    address: data.address
+                    maxCapacity: data.maxCp,
+                    latitude: data.latitude,
+                    longitude: data.longitude,
+                    jamOperasional: data.jamOperasional,
+                    address: data.address,
+                    facility: data.fac
                 }
             });
 
@@ -64,14 +68,42 @@ class GymService {
     }
 
     // nanti dulu bingung
-    async updateGym(data){
+    async updateGym(data, userId, id){
+        console.log(data);
+        
+        const checkGym = await prisma.gym.findFirst({
+            where: {
+                id,
+                ownerId: userId
+            }
+        });
+        if(!checkGym) throw BaseError.notFound("Gym not found");
+
+        // jangan pake update gambar dulu cuman data aja
+        // data = {name, maxCapacity, address, jamOperasional}
+        const updateGym = await prisma.gym.update({
+            where: {
+                id: checkGym.id
+            },
+            data: data
+        })
+        if(!updateGym) throw new Error("failed to update gym");
+        return updateGym;
 
     }
 
 
-    async getAllGym(){
+    async getAllGym(search){
+        const where = {};
+        if(search){
+            where.name = {
+                contains: search,
+            }
+        }
+
         const gym = await prisma.gym.findMany({
             where: {
+                ...where,
                 isVerified: true
             },
             select: {

@@ -119,7 +119,7 @@ class GymPenjagaService {
                 role: "PENJAGA",
                 gym: {
                     ownerId: data.ownerId,
-                ...(data.id ? { id: data.id } : {})
+                    id: data.id
                 }
             },
             select: {
@@ -127,6 +127,7 @@ class GymPenjagaService {
                 name: true,
                 email: true,
                 role: true,
+                profileImage: true,
                 gym: {
                     select: {
                         name: true
@@ -145,6 +146,7 @@ class GymPenjagaService {
                 role: "PENJAGA"
             },
             select: {
+                id: true,
                 name: true,
                 username: true,
                 email: true,
@@ -155,12 +157,12 @@ class GymPenjagaService {
         return penjaga
     }
 
-    async updatePenjaga(id, data, imageProfile, ownerId){
-        
+    async updatePenjaga(gymId, id, data, imageProfile, ownerId){
         const checkUser = await prisma.user.findFirst({
             where: {
                 id,
                 gym: {
+                    id: gymId,
                     ownerId: ownerId
                 }
             }
@@ -184,7 +186,8 @@ class GymPenjagaService {
             data,
             select: {
                 name: true,
-                email: true
+                email: true,
+                profileImage: true
             }
         })
         return user;
@@ -196,6 +199,7 @@ class GymPenjagaService {
             where: {
                 id: data.id,
                 gym: {
+                    id: data.gymId,
                     ownerId: data.ownerId
                 }
             },

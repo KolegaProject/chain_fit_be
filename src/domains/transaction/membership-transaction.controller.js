@@ -1,5 +1,5 @@
 import membershipTransactionService from "./membership-transaction.service.js";
-import { successResponse, createdResponse } from "../../../utils/response.js";
+import { successResponse, createdResponse } from "../../utils/response.js";
 
 
 class MembershipTransactionController {

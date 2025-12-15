@@ -12,7 +12,7 @@ class GymPenjagaController {
     }
 
     async deletePenjaga(req, res){
-        const {userId} = req.body;
+        const userId = Number(req.params.userId);
         const ownerId = req.user.id;
         const gymId = parseInt(req.params.id)
         const penjaga = await gymPenjagaService.deletePenjagaGym(userId, ownerId, gymId);
@@ -49,12 +49,11 @@ class GymPenjagaController {
         let imageProfile = null;
         if(req.files){
             imageProfile = req.files.image;
-
         }
         
         const userId = parseInt(req.params.userId);
         const ownerId = req.user.id;
-        const penjaga = await gymPenjagaService.updatePenjaga(userId, {name, email, password}, imageProfile, ownerId);
+        const penjaga = await gymPenjagaService.updatePenjaga(id, userId, {name, email, password}, imageProfile, ownerId);
 
         if(!penjaga) throw new Error("Failed to update profile penjaga");
 
@@ -70,7 +69,7 @@ class GymPenjagaController {
         const id = parseInt(req.params.userId);
         const ownerId = req.user.id;
         
-        const message = await gymPenjagaService.updatePasswordProfile({ownerId, id}, old_password, new_password);
+        const message = await gymPenjagaService.updatePasswordProfile({ownerId, id, gymId}, old_password, new_password);
 
         if (!message) {
             throw Error("Failed to update staff password");

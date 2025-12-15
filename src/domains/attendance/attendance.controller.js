@@ -10,7 +10,8 @@ class AttendanceController {
 
     async getAttendanceToken(req, res){
         const user_id = req.user.id;
-        const token = await attendanceService.getAttendanceToken(user_id);
+        const gymId = parseInt(req.params.id);
+        const token = await attendanceService.getAttendanceToken(user_id, gymId);
         return createdResponse(res, {token});
     }
 
@@ -30,6 +31,12 @@ class AttendanceController {
     async getAttendanceHistory(req, res){
         const gymId = parseInt(req.params.gymId);
         const attendanceHistory = await attendanceService.getAttendanceHistory(gymId);
+        return successResponse(res, attendanceHistory);
+    }
+
+    async getMyAttendanceHistory(req, res){
+        const userId = req.user.id;
+        const attendanceHistory = await attendanceService.getMemberAttendanceHistory(userId);
         return successResponse(res, attendanceHistory);
     }
 

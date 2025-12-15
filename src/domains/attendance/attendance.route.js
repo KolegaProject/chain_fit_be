@@ -4,14 +4,16 @@ import authTokenMiddleware from "../../middlewares/auth-token-middleware.js";
 import BaseRoutes from "../../base_classes/base-route.js";
 import attendanceController from "./attendance.controller.js";
 import { attendanceSchema, checkInSchema } from "./attendance.schema.js";
+import { gymSchema } from "../gym/gym.schema.js";
 
 
 class AttendanceRoutes extends BaseRoutes{
     routes(){
 
-        this.router.post('/qr/me',
+        this.router.post('/:id/qr/me',
             authTokenMiddleware.authenticate,
             authTokenMiddleware.authorizeUser(['MEMBER']),
+            validateCredentials(gymSchema, 'params'),
             tryCatch(attendanceController.getAttendanceToken)
         );
 
@@ -40,6 +42,12 @@ class AttendanceRoutes extends BaseRoutes{
             validateCredentials(attendanceSchema, "params"),
             tryCatch(attendanceController.index)
         ); 
+
+        this.router.get('/me/history',
+            authTokenMiddleware.authenticate,
+            authTokenMiddleware.authorizeUser(['MEMBER']),
+            tryCatch(attendanceController.getMyAttendanceHistory)
+        );
     }
 }
 export default new AttendanceRoutes().router;

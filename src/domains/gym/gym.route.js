@@ -1,14 +1,12 @@
-
 import tryCatch from "../../utils/tryCatcher.js";
 import validateCredentials from "../../middlewares/validate-credentials-middleware.js";
 import authTokenMiddleware from "../../middlewares/auth-token-middleware.js";
 import BaseRoutes from "../../base_classes/base-route.js";
 import { changePasswordSchema } from "../auth/auth-schema.js";
 
-
 // GYM DOMAIN
 import gymController from "./gym.controller.js";
-import { createGymSchema, getGymSchema, gymSchema } from "./gym.schema.js";
+import { createGymSchema, getGymSchema, gymSchema, queryGymSchema, updateGymSchema } from "./gym.schema.js";
 
 // PAKET MEMBER DOMAIN
 import {
@@ -20,10 +18,34 @@ import paketMemberController from "../membership_paket/paket-member.controller.j
 
 // PENJAGA GYM DOMAIN
 import gymPenjagaController from "./penjaga/gym-penjaga.controller.js";
-import { createPenjagaSchema, getPenjagaSchema, updatePenjagaSchema } from "./penjaga/gym-penjaga.schema.js";
+import {
+  createPenjagaSchema,
+  getPenjagaSchema,
+  updatePenjagaSchema,
+} from "./penjaga/gym-penjaga.schema.js";
+
+// EQUIPMENT DOMAIN
+import { createEquipmentSchema, deleteEquipmentSchema,  getHistoryEquipmentByIdSchema, showEquipmentSchema, updateEquipmentSchema } from "../equipment/equipment.schema.js";
+import equipmentController from "../equipment/equipment.controller.js";
+import gymMembershipController from "./membership/gym-membership.controller.js";
 
 class GymRoutes extends BaseRoutes {
   routes() {
+
+    // membership
+    this.router.get("/me/memberships", [
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["MEMBER"]),
+      tryCatch(gymMembershipController.getMembership),
+    ]);
+
+    // profile penjaga
+    this.router.get("/gym-staff/me", [
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["PENJAGA"]),
+      tryCatch(gymPenjagaController.profile),
+    ]);
+
     // ========== Verified gym (ADMIN) ==========
     this.router.get("/verified-gym", [
       authTokenMiddleware.authenticate,
@@ -53,14 +75,8 @@ class GymRoutes extends BaseRoutes {
       validateCredentials(createPenjagaSchema),
       tryCatch(gymPenjagaController.createPenjaga),
     ]);
-    
-    this.router.delete("/:id/gym-staff", [
-      authTokenMiddleware.authenticate,
-      authTokenMiddleware.authorizeUser(["OWNER"]),
-      validateCredentials(gymSchema, "params"),
-      validateCredentials(getPenjagaSchema),
-      tryCatch(gymPenjagaController.deletePenjaga),
-    ]);
+
+
 
     this.router.get("/:id/gym-staff", [
       authTokenMiddleware.authenticate,
@@ -68,21 +84,21 @@ class GymRoutes extends BaseRoutes {
       validateCredentials(gymSchema, "params"),
       tryCatch(gymPenjagaController.index),
     ]);
-    
-    this.router.get("/:id/gym-staff/profile", [
-      authTokenMiddleware.authenticate,
-      authTokenMiddleware.authorizeUser(["PENJAGA"]),
-      validateCredentials(gymSchema, "params"),
-      tryCatch(gymPenjagaController.profile), 
-    ]);
-    
+
     this.router.get("/:id/gym-staff/:userId", [
       authTokenMiddleware.authenticate,
       authTokenMiddleware.authorizeUser(["OWNER"]),
       validateCredentials(getPenjagaSchema, "params"),
       tryCatch(gymPenjagaController.show),
     ]);
-    
+
+    this.router.delete("/:id/gym-staff/:userId", [
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["OWNER"]),
+      validateCredentials(getPenjagaSchema, "params"),
+      tryCatch(gymPenjagaController.deletePenjaga),
+    ]);
+
     this.router.put("/:id/gym-staff/:userId", [
       authTokenMiddleware.authenticate,
       authTokenMiddleware.authorizeUser(["OWNER"]),
@@ -90,7 +106,7 @@ class GymRoutes extends BaseRoutes {
       validateCredentials(updatePenjagaSchema),
       tryCatch(gymPenjagaController.update),
     ]);
-    
+
     this.router.patch("/:id/gym-staff/:userId/update-password", [
       authTokenMiddleware.authenticate,
       authTokenMiddleware.authorizeUser(["OWNER"]),
@@ -99,13 +115,72 @@ class GymRoutes extends BaseRoutes {
       tryCatch(gymPenjagaController.updateStaffPassword),
     ]);
 
-
     // ========== Gym milik owner ==========
     this.router.get("/owner", [
       authTokenMiddleware.authenticate,
       authTokenMiddleware.authorizeUser(["OWNER"]),
       tryCatch(gymController.gymOwner),
     ]);
+
+    // equipment API for gym owner and penjaga
+    this.router.post(
+      "/:id/equipment",
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
+      validateCredentials(gymSchema, "params"),
+      validateCredentials(createEquipmentSchema),
+      tryCatch(equipmentController.create)
+    );
+
+    this.router.put(
+      "/:id/equipment/:equipId",
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
+      validateCredentials(deleteEquipmentSchema, "params"),
+      validateCredentials(updateEquipmentSchema),
+      tryCatch(equipmentController.update)
+    );
+
+    this.router.delete(
+      "/:id/equipment/:equipId",
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
+      validateCredentials(deleteEquipmentSchema, "params"),
+      tryCatch(equipmentController.delete)
+    );
+
+    this.router.get(
+      "/:id/equipment",
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
+      validateCredentials(gymSchema, "params"),
+      validateCredentials(showEquipmentSchema, "query"),
+      tryCatch(equipmentController.index)
+    );
+    
+    this.router.get(
+      "/:id/equipment/:equipId",
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
+      validateCredentials(deleteEquipmentSchema, "params"),
+      tryCatch(equipmentController.show)
+    );
+
+    this.router.get(
+      "/:id/equipment/:equipId/history",
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
+      validateCredentials(deleteEquipmentSchema, "params"),
+      tryCatch(equipmentController.getAllHistoryEquipment)
+    );
+
+    this.router.get(
+      "/:id/equipment/:equipId/history/:historyId",
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
+      validateCredentials(getHistoryEquipmentByIdSchema, "params"),
+      tryCatch(equipmentController.getHistoryEquipmentById)
+    );
 
     // ========== Gym list & create ==========
     this.router.post("/", [
@@ -114,10 +189,18 @@ class GymRoutes extends BaseRoutes {
       validateCredentials(createGymSchema),
       tryCatch(gymController.create),
     ]);
+    this.router.put("/:id", [
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["OWNER"]),
+      validateCredentials(gymSchema, "params"),
+      validateCredentials(updateGymSchema),
+      tryCatch(gymController.update)
+    ])
 
     this.router.get("/", [
       authTokenMiddleware.authenticate,
       authTokenMiddleware.authorizeUser(["OWNER", "MEMBER", "PENJAGA"]),
+      validateCredentials(queryGymSchema, "query"),
       tryCatch(gymController.index),
     ]);
 
@@ -144,6 +227,9 @@ class GymRoutes extends BaseRoutes {
       validateCredentials(gymSchema, "params"),
       tryCatch(gymController.delete),
     ]);
+
+
+
 
     // paket member API
     this.router.post("/:id/paket-member", [
@@ -216,7 +302,6 @@ export default new GymRoutes().router;
 //   tryCatch(gymController.showPenjaga),
 // ]);
 
-
 // import BaseRoutes from "../../../base_classes/base-route.js";
 // import authTokenMiddleware from "../../../middlewares/auth-token-middleware.js";
 // import validateCredentials from "../../../middlewares/validate-credentials-middleware.js";
@@ -245,7 +330,7 @@ export default new GymRoutes().router;
 //         this.router.get("/", [
 //             authTokenMiddleware.authenticate,
 //             authTokenMiddleware.authorizeUser(["OWNER"]),
-//             validateCredentials(gymSchema), 
+//             validateCredentials(gymSchema),
 //             tryCatch(gymPenjagaController.index),
 //         ])
 
@@ -262,7 +347,7 @@ export default new GymRoutes().router;
 //             validateCredentials(getGymSchema, "params"),
 //             tryCatch(gymPenjagaController.show),
 //         ]);
-        
+
 //         this.router.put("/:userId", [
 //             authTokenMiddleware.authenticate,
 //             authTokenMiddleware.authorizeUser(["OWNER"]),
@@ -279,7 +364,7 @@ export default new GymRoutes().router;
 //             tryCatch(gymPenjagaController.updateStaffPassword),
 //         ])
 
-//     } 
+//     }
 // }
 
 // export default new GymPenjagaRoutes().router;

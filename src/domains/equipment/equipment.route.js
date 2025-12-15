@@ -1,50 +1,21 @@
-import BaseRoutes from "../../base_classes/base-route.js";
-import equipmentController from "./equipment.controller.js";
 import tryCatch from "../../utils/tryCatcher.js";
 import validateCredentials from "../../middlewares/validate-credentials-middleware.js";
 import authTokenMiddleware from "../../middlewares/auth-token-middleware.js";
-import {createEquipment,updateEquipment, queryEquipment,} from "./equipment.schema.js";
+import BaseRoutes from "../../base_classes/base-route.js";
+import { getUserEquipmentSchema } from "./equipment.schema.js";
+import equipmentController from "./equipment.controller.js";
 
-class EquipmentRoutes extends BaseRoutes {
-  routes() {
-    // 1. Create Equipment
-    this.router.post("/",
-      authTokenMiddleware.authenticate,
-      authTokenMiddleware.authorizeUser(['OWNER']),
-      validateCredentials(createEquipment),
-      tryCatch(equipmentController.create)
-    );
 
-    // 2. Get All Equipment (Pagination)
-    this.router.get("/",
-      authTokenMiddleware.authenticate,
-      authTokenMiddleware.authorizeUser(['OWNER' , 'MEMBER', 'PENJAGA']),
-      validateCredentials(queryEquipment),
-      tryCatch(equipmentController.findAll)
-    );
+class EquipmentRoutes extends BaseRoutes{
+    routes(){
 
-    // 3. Get One Equipment
-    this.router.get("/:id",
-      authTokenMiddleware.authenticate,
-      authTokenMiddleware.authorizeUser(['OWNER', 'MEMBER', 'PENJAGA']),
-      tryCatch(equipmentController.findOne)
-    );
-
-    // 4. Update Equipment
-    this.router.patch("/:id",
-      authTokenMiddleware.authenticate,
-      authTokenMiddleware.authorizeUser(['OWNER']),
-      validateCredentials(updateEquipment),
-      tryCatch(equipmentController.update)
-    );
-
-    // 5. Delete Equipment
-    this.router.delete("/:id",
-      authTokenMiddleware.authenticate,
-      authTokenMiddleware.authorizeUser(['OWNER']),
-      tryCatch(equipmentController.delete)
-    );
-  }
+        this.router.get('/me', 
+            authTokenMiddleware.authenticate,
+            authTokenMiddleware.authorizeUser(['MEMBER']),
+            validateCredentials(getUserEquipmentSchema, 'query'),
+            tryCatch(equipmentController.getEquipmentUser)
+        );
+    }
 }
 
 export default new EquipmentRoutes().router;

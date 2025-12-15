@@ -15,9 +15,10 @@ class AttendanceService {
         return attendance;
     }
 
-    async getAttendanceToken(user_id){
+    async getAttendanceToken(user_id, gymId){
         const member = await prisma.membership.findFirst({
             where: {
+                gymId: gymId,
                 userId: user_id,
                 status: 'AKTIF',
                 endDate: {
@@ -32,7 +33,7 @@ class AttendanceService {
 
         const token = generateToken(member.id, '15m');
 
-        return token;
+        return {token, memberId: `GYM${gymId}-MEMBERSHIP${member.id}`};
     }
 
 
@@ -54,6 +55,16 @@ class AttendanceService {
         });
         if(!activeMembership) throw BaseError.badRequest("User does not have an active membership");
 
+
+        // cek penjaga gym
+        const penjaga =  await prisma.user.findFirst({
+            where: {
+                id: penjagaId,
+                role: 'PENJAGA',
+                gymId: activeMembership.gymId,
+            },
+        });
+        if(!penjaga) throw BaseError.forbidden("You are not authorized to check in members for this gym");
         // Cek apakah sudah check in
         const existingAttendance = await prisma.attendance.findFirst({
             where: {
@@ -127,8 +138,21 @@ class AttendanceService {
         const attendance = await prisma.attendance.findMany({
             where: {
                 gymId: gymId,
+                
             },
         });
+        return attendance;
+    }
+
+    async getMemberAttendanceHistory(memberId){
+        const attendance = await prisma.attendance.findMany({
+            where: {
+                membership: {
+                    userId: memberId,
+                },
+            },
+        });
+
         return attendance;
     }
 }

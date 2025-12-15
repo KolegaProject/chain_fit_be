@@ -21,4 +21,4 @@ RUN npx prisma generate
 EXPOSE 4002
 
 # Jalankan aplikasi
-CMD ["npm", "start"]
+CMD ["npm", "start"]    

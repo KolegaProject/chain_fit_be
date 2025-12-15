@@ -147,24 +147,27 @@ class AuthService {
 
     
     async getProfile(id) {
-        const user = await prisma.user.findUnique({
-            where: {
-                id: id
-            },
-            select: {
-                id: true,
-                username: true,
-                role: true,
-                email: true,
-                profileImage: true,                
+        const u = await prisma.user.findUnique({
+        where: { id: id },
+        select: {
+            id: true, username: true, email: true, role: true, profileImage: true,
+            gym: { select: { id: true, name: true } },          // untuk staff
+            gymsOwned: { select: { id: true, name: true } },    // untuk owner
+            memberships: {                                      // opsional untuk member
+            where: { status: "AKTIF", endDate: { gte: new Date() } },
+            select: { gym: { select: { id: true, name: true } } }
             }
+        }
         });
 
-        if (!user) {
-            throw BaseError.notFound("User not found");
-        }
+        let gyms = [];
+        if (u.role === "PENJAGA" && u.gym) gyms = [u.gym];
+        else if (u.role === "OWNER") gyms = u.gymsOwned;
+        else if (u.role === "MEMBER") gyms = u.memberships.map(m => m.gym);
 
-        return user;
+        const defaultGymId = gyms[0]?.id ?? null;
+
+        return { user: { id:u.id, username:u.username, email:u.email, role:u.role, profileImage:u.profileImage }, gyms, defaultGymId };
     }
 
     async updateProfile(id, data, imgProfile) {

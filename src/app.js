@@ -16,10 +16,9 @@ import prisma from "./config/db.js";
 import corsOptions from "./config/cors.js";
 import AuthRoutes from "./domains/auth/auth-routes.js";
 import gymRoute from "./domains/gym/gym.route.js";
-import membershipTransactionRoutes from "./domains/transaction/membership/membership-transaction.routes.js";
+import membershipTransactionRoutes from "./domains/transaction/membership-transaction.routes.js";
 import attendanceRoute from "./domains/attendance/attendance.route.js";
 import equipmentRoute from "./domains/equipment/equipment.route.js";
-import tutorialVideoRoute from "./domains/tutorialVideo/tutorialVideo.route.js";
 
 class ExpressApplication {
     app;
@@ -94,10 +93,9 @@ class ExpressApplication {
         // Set Route here base (/api/v1)
         this.app.use("/api/v1/auth", AuthRoutes);
         this.app.use("/api/v1/gym", gymRoute);
+        this.app.use("/api/v1/equipment", equipmentRoute);
         this.app.use("/api/v1/transaction", membershipTransactionRoutes);
         this.app.use("/api/v1/attendance", attendanceRoute);
-        this.app.use("/api/v1/equipment", equipmentRoute);
-        this.app.use("/api/v1/tutorial-video", tutorialVideoRoute);
     }
 
     configureAssets() {

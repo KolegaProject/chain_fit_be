@@ -1,36 +1,107 @@
 import Joi from "joi";
 
-const createEquipment = Joi.object({
-  name: Joi.string().required().messages({
-    'string.empty': 'Nama alat tidak boleh kosong',
-    'any.required': 'Nama alat harus diisi'
-  }),
-  healthStatus: Joi.string().valid('BAIK', 'BUTUH_PERAWATAN', 'RUSAK').required().messages({
-    'any.only': 'Status harus salah satu dari: BAIK, BUTUH_PERAWATAN, RUSAK'
-  }),
-  photo: Joi.string().uri().allow(null, '').optional().messages({
-    'string.uri': 'Format URL foto tidak valid'
-  }),
-  gymId: Joi.number().integer().positive().optional(),
-  applyToAll: Joi.boolean().default(false).messages({
-      'boolean.base': 'applyToAll harus berupa boolean'
-  })
+const equipmentSchema = Joi.object({
+    equipId: Joi.number().min(1).required().messages({
+        "number.empty": "Id equipment is required",
+        "number.min": "Id equipment must be number at least 1",
+        "number.base": "Id equipment must be int"
+    }),
 });
 
-const updateEquipment = Joi.object({
-  name: Joi.string().optional(),
-  healthStatus: Joi.string().valid('BAIK', 'BUTUH_PERAWATAN', 'RUSAK').optional(),
-  photo: Joi.string().uri().allow(null, '').optional()
+// name, videoURL,
+const createEquipmentSchema = Joi.object({
+    name: Joi.string().required().min(3).max(50).messages({
+        "string.empty": "Equipment name is required.",
+        "string.min": "Equipment name must be at least 3 characters long.",
+        "string.max": "Equipment name must be at most 50 characters long.",
+        "string.base": "Equipment name must be a string."
+    }),
+    videoURL: Joi.string().uri().optional().messages({
+        "string.uri": "Video URL must be a valid URI.",
+        "string.base": "Video URL must be a string."
+    })
+})
+
+const updateEquipmentSchema = Joi.object({
+    name: Joi.string().optional().min(3).max(50).messages({
+        "string.empty": "Equipment name cannot be empty.",
+        "string.min": "Equipment name must be at least 3 characters long.",
+        "string.max": "Equipment name must be at most 50 characters long.",
+        "string.base": "Equipment name must be a string."
+    }),
+    healthStatus: Joi.string().valid('BAIK', 'BUTUH_PERAWATAN', 'RUSAK').optional().messages({
+        "any.only": "Health status must be one of 'BAIK', 'BUTUH_PERAWATAN', or 'RUSAK'.",
+        "string.base": "Health status must be a string."
+    }),
+    videoURL: Joi.string().uri().optional().messages({
+        "string.uri": "Video URL must be a valid URI.",
+        "string.base": "Video URL must be a string."
+    })
 });
 
-const queryEquipment = Joi.object({
-  page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(10),
-  search: Joi.string().allow('').optional()
+
+const showEquipmentSchema = Joi.object({
+    search: Joi.string().optional().messages({
+        "string.base": "Search must be a string."
+    }),
+    healthStatus: Joi.string().valid('BAIK', 'BUTUH_PERAWATAN', 'RUSAK').optional().messages({
+        "any.only": "Health status must be one of 'BAIK', 'BUTUH_PERAWATAN', or 'RUSAK'.",
+        "string.base": "Health status must be a string."
+    })
 });
+
+const deleteEquipmentSchema = Joi.object({
+    equipId: Joi.number().min(1).required().messages({
+        "number.empty": "Id equipment is required",
+        "number.min": "Id equipment must be number at least 1",
+        "number.base": "Id equipment must be int"
+    }),
+    id: Joi.number().min(1).required().messages({
+        "number.empty": "Id gym is required",
+        "number.min": "Id gym must be number at least 1",
+        "number.base": "Id gym must be int"
+    }),
+});
+
+const getHistoryEquipmentByIdSchema = Joi.object({
+    equipId: Joi.number().min(1).required().messages({
+        "number.empty": "Id equipment is required",
+        "number.min": "Id equipment must be number at least 1",
+        "number.base": "Id equipment must be int"
+    }),
+    historyId: Joi.number().min(1).required().messages({
+        "number.empty": "Id history is required",
+        "number.min": "Id history must be number at least 1",
+        "number.base": "Id history must be int"
+    }),
+    id: Joi.number().min(1).required().messages({
+        "number.empty": "Id gym is required",
+        "number.min": "Id gym must be number at least 1",
+        "number.base": "Id gym must be int"
+    }),
+});
+
+
+
+const getUserEquipmentSchema = Joi.object({
+    search: Joi.string().optional().messages({
+        "string.base": "Search must be a string."
+    }),
+    filter: Joi.number().min(1).required().messages({
+        "number.empty": "Id equipment is required",
+        "number.min": "Id equipment must be number at least 1",
+        "number.base": "Id equipment must be int"
+    }),
+});
+
+
 
 export {
-  createEquipment,
-  updateEquipment,
-  queryEquipment
-};
+    equipmentSchema,
+    createEquipmentSchema,
+    updateEquipmentSchema,
+    showEquipmentSchema,
+    deleteEquipmentSchema,
+    getHistoryEquipmentByIdSchema,
+    getUserEquipmentSchema
+}

@@ -8,7 +8,7 @@ export const uploadFile = async (folder, img = []) => {
 
     let results = [];
 
-    for (const image of img) {
+    for (const image of img) { 
         const fileBuffer = image.buffer;
         const contentType = image.mimetype;
         const key = `${folder}/${new Date().getTime()}-${image.originalname}`;
