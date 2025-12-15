@@ -23,7 +23,8 @@ class GymService {
                     latitude: data.latitude,
                     longitude: data.longitude,
                     jamOperasional: data.jamOperasional,
-                    address: data.address
+                    address: data.address,
+                    facility: data.fac
                 }
             });
 

@@ -73,6 +73,13 @@ const createGymSchema = Joi.object({
       "any.required": "Longitude is required.",
       "string.pattern.base": "Longitude must be a valid numeric string (e.g. 106.816666).",
     }),
+    facility : Joi.string().min(3)
+        .required()
+        .messages({
+            "string.empty": "Facility is required",
+            "string.base": "Facility label must be a string.",
+            "string.min": "Facility label must be string",
+    })
 });
 
 
@@ -82,7 +89,7 @@ const updateGymSchema = Joi.object({
             "string.min": "Gym name must be at least 2 characters long.",
             "string.base": "Gym name can only contain letters and spaces."
     }),
-    maxCapacity: Joi.number().min(1).optional().messages({
+    maxCp: Joi.number().min(1).optional().messages({
             "number.min": "Max capacity gym must be number at least 1",
             "number.base": "Max capacity gym must be int"
     }),
@@ -113,6 +120,12 @@ const updateGymSchema = Joi.object({
       "string.base": "Longitude must be a string.",
       "string.pattern.base": "Longitude must be a valid numeric string (e.g. 106.816666).",
     }),
+    fac: Joi.string().min(3)
+        .optional()
+        .messages({
+            "string.base": "Facility label must be a string.",
+            "string.min": "Facility label must be string",
+    })
 })
 
 const queryGymSchema = Joi.object({

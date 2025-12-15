@@ -4,15 +4,17 @@ import gymService from "./gym.service.js";
 class GymController {
 
     async create(req, res){
-        const {namaGym, maxCapacity, address, jamOperasional, lat, long} = req.body;
+        const {namaGym, maxCapacity, address, jamOperasional, lat, long, facility} = req.body;
         const maxCp = Number(maxCapacity);
         const latitude = Number(lat);
         const longitude = Number(long);
+        const fac = JSON.parse(facility)
+        if(!Array.isArray(fac)) throw new Error(`Facility must be a JSON array string. Example: ["Sauna","Loker"]`)
         const ownerId = req.user.id;
         const img = req.files.image;
         
 
-        const gym = await gymService.createGym({namaGym, maxCp, address, ownerId, jamOperasional, latitude, longitude}, img)
+        const gym = await gymService.createGym({namaGym, maxCp, address, ownerId, jamOperasional, latitude, longitude, facility, fac}, img)
 
         if(!gym) throw new Error("Failed to create gym");
 
@@ -20,15 +22,17 @@ class GymController {
     }
 
     async update(req, res){
-            let maxCp, latitude, longitude;
-            const {name, maxCapacity, address, jamOperasional, lat, long} = req.body;
-            if(maxCapacity) maxCp = Number(maxCapacity);
+            let maxCapacity, latitude, longitude, facility;
+
+            const {name, maxCp, address, jamOperasional, lat, long, fac} = req.body;
+            if(maxCapacity) maxCapacity = Number(maxCp);
             if(lat) latitude = Number(lat);
             if(long) longitude = Number(long);
+            if(fac) facility = JSON.parse(fac)
             const ownerId = req.user.id;
             const id = Number(req.params.id);
 
-            const gym = await gymService.updateGym({name, maxCapacity, address, jamOperasional, latitude, longitude}, ownerId, id);
+            const gym = await gymService.updateGym({name, maxCapacity, address, jamOperasional, latitude, longitude, facility}, ownerId, id);
 
             if(!gym) throw new Error("Failed to update gym");
 

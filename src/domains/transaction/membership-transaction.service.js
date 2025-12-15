@@ -11,6 +11,9 @@ class MembershipTransactionService {
   }
 
   async createSnap(packageId, userId, gymId) {
+    const now = new Date();
+    const threeDays = 3*24*60*60*1000;
+    const renewAllowedFrom = new Date(now.getTime() + threeDays);
     return prisma.$transaction(async (tx) => {
       // Cek package + gym
       const membershipPackage = await tx.membershipPackage.findFirst({
@@ -34,7 +37,7 @@ class MembershipTransactionService {
           gymId: gymId,
           status: 'AKTIF',
           endDate: {
-            gte: new Date(), // masih berlaku
+            gte: renewAllowedFrom, // masih berlaku
           },
         },
       });
@@ -237,32 +240,57 @@ class MembershipTransactionService {
         return;
       }
 
+      // Cari membership TERAKHIR di gym ini (aktif maupun sudah habis)
+      const existingMembership = await tx.membership.findFirst({
+        where: {
+          userId: updatedTx.userId,
+          gymId: updatedTx.gymId,
+          // optional: status in ['AKTIF','EXPIRED'] jika ada
+        },
+        orderBy: { endDate: 'desc' },
+      });
+      
       // Hitung start & end date membership
       const now = new Date();
-      const endDate = new Date(now);
-      endDate.setDate(endDate.getDate() + membershipPackage.durationDays);
+      const baseDate = existingMembership && existingMembership.endDate > now ? existingMembership.endDate : now;
+      const newEndDate = new Date(baseDate);
+      newEndDate.setDate(newEndDate.getDate() + membershipPackage.durationDays);
 
-      // Buat Membership baru
-      const membership = await tx.membership.create({
-        data: {
-          userId: updatedTx.userId, 
-          gymId: updatedTx.gymId,
-          packageId: membershipPackage.id,
-          startDate: now,
-          endDate,
-          status: 'AKTIF',
-        },
-      });
+      let membershipRecord;
+      if(existingMembership){
+        // update membership
+        membershipRecord = await tx.membership.update({
+          where: { id: existingMembership.id },
+          data: {
+            endDate: newEndDate,
+            status: 'AKTIF',
+            packageId: membershipPackage.id,
+          },
+        });
+      }else {
+        // Buat Membership baru
+        membershipRecord = await tx.membership.create({
+          data: {
+            userId: updatedTx.userId, 
+            gymId: updatedTx.gymId,
+            packageId: membershipPackage.id,
+            startDate: now,
+            endDate: newEndDate,
+            status: 'AKTIF',
+          },
+        });
+      }
 
       // Update transaction.membershipId
       await tx.transaction.update({
         where: { id: updatedTx.id },
-        data: { membershipId: membership.id },
+        data: { membershipId: membershipRecord.id },
       });
 
       console.log('Membership created & linked to transaction', {
         transactionId: updatedTx.id,
-        membershipId: membership.id,
+        membershipId: membershipRecord.id,
+        endDate: membershipRecord.endDate,
       });
     });
 
