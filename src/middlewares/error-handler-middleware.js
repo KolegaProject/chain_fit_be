@@ -51,7 +51,7 @@ export const errorHandler = async(err, req, res, _next) => {
     
     // ambil user id
     const user = await prisma.user.findFirst({
-        where: { email: req.body.email },
+        where: { email: req.body?.email },
         select: { id: true }
     });
 
