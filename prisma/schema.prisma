@@ -101,6 +101,7 @@ model Gym {
   longitude       Decimal
   address        String
   jamOperasional String
+  facility      Json?
 
   ownerId Int?
   owner   User?     @relation("GymOwner", fields: [ownerId], references: [id])
