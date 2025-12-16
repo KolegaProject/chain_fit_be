@@ -61,7 +61,7 @@ class ExpressApplication {
         this.app.use(express.json({ type: "application/json", limit: "50mb" }));
         this.app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 
-        this.app.use(cors(corsOptions)); 
+        // this.app.use(cors(corsOptions)); 
         //  __init__
 
         this.configureAssets();
