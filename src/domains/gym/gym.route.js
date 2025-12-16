@@ -67,6 +67,13 @@ class GymRoutes extends BaseRoutes {
       tryCatch(gymController.verified),
     ]);
 
+    this.router.post("/verified-gym/:id/rejected", [
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["ADMIN"]),
+      validateCredentials(gymSchema, "params"),
+      tryCatch(gymController.rejected)
+    ]);
+
     // staff gym
     this.router.post("/:id/gym-staff", [
       authTokenMiddleware.authenticate,

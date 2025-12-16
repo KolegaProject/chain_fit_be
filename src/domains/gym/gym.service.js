@@ -104,7 +104,7 @@ class GymService {
         const gym = await prisma.gym.findMany({
             where: {
                 ...where,
-                isVerified: true
+                verified: "APPROVED"
             },
             select: {
                 name: true,
@@ -127,7 +127,7 @@ class GymService {
         const gym = await prisma.gym.findFirst({
             where: {
                 id,
-                isVerified: true
+                verified: "APPROVED"
             },
             include: {
                 gymImage: {
@@ -145,7 +145,7 @@ class GymService {
     async getListGymNotVerifed(){
         const gym = await prisma.gym.findMany({
             where: {
-                isVerified: false
+                verified: "PENDING"
             },
         })
         return gym;
@@ -155,7 +155,7 @@ class GymService {
         const gym = await prisma.gym.findUnique({
             where: {
                 id: id,
-                    isVerified: false
+                    verified: "PENDING"
                 
             },
             include: {
@@ -176,7 +176,7 @@ class GymService {
         const gym = await prisma.gym.findUnique({
             where: {
                 id: id,
-                isVerified: false
+                verified: "PENDING"
             },
         })
         if(!gym) throw BaseError.notFound("gym not found");
@@ -186,11 +186,32 @@ class GymService {
                 id: gym.id
             },
             data: {
-                isVerified: true
+                verified: "APPROVED"
             }
         })
 
         return "successfully verified gym"
+    }
+
+    async rejectedGym(id){
+        const gym = await prisma.gym.findUnique({
+            where: {
+                id: id,
+                verified: "PENDING"
+            },
+        })  
+        if(!gym) throw BaseError.notFound("gym not found");
+
+        await prisma.gym.update({
+            where: {
+                id: gym.id
+            },
+            data: {
+                verified: "REJECTED"
+            }
+        })
+
+        return "Rejected gym"
     }
 
 

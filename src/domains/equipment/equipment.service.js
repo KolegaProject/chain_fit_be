@@ -87,11 +87,6 @@ class EquipmentService {
       where: {
         id: equipmentId,
         gymId,
-        // udah validasi di atas leeee
-        // OR: [
-        //     {gym: { ownerId: user.id } },
-        //     {gym: {staff: {some: {id: user.id}}} }
-        // ]
       },
     });
     if (!equipment) throw BaseError.notFound("Equipment not found");

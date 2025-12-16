@@ -65,7 +65,7 @@ class GymController {
         const response = await gymService.getListGymNotVerifed();
         
         if (!response) {
-            throw Error("Failed to get list gym");
+            throw new Error("Failed to get list gym");
         }
         
         return successResponse(res, response);
@@ -76,7 +76,7 @@ class GymController {
         const response = await gymService.getListGymNotVerifedById(id);
         
         if (!response) {
-            throw Error("Failed to get list gym");
+            throw new Error("Failed to get list gym");
         }
         return successResponse(res, response);
     }
@@ -86,10 +86,18 @@ class GymController {
         const response = await gymService.verifedGym(id);
         
         if (!response) {
-            throw Error("Failed to verified gym");
+            throw new Error("Failed to verified gym");
         }
 
         return successResponse(res, response);
+    }
+
+    async rejected(req, res){
+        const id = Number(req.params.id);
+        const response = await gymService.rejectedGym(id);
+
+        if(!response) throw new Error("Failed to rejected gym");
+        return successResponse(res, response)
     }
 
     async gymOwner(req, res){
