@@ -83,7 +83,8 @@ class GymController {
     
     async verified(req, res){
         const id = parseInt(req.params.id);
-        const response = await gymService.verifedGym(id);
+        const status = req.body.status;
+        const response = await gymService.verifedGym(id, status);
         
         if (!response) {
             throw new Error("Failed to verified gym");
@@ -92,13 +93,6 @@ class GymController {
         return successResponse(res, response);
     }
 
-    async rejected(req, res){
-        const id = Number(req.params.id);
-        const response = await gymService.rejectedGym(id);
-
-        if(!response) throw new Error("Failed to rejected gym");
-        return successResponse(res, response)
-    }
 
     async gymOwner(req, res){
         const ownerId = req.user.id;

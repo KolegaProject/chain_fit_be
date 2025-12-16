@@ -172,7 +172,9 @@ class GymService {
         return gym;
     }
 
-    async verifedGym(id){
+    async verifedGym(id, status){
+        let verif = "APPROVED"
+        let message = "Successfully verified gym"
         const gym = await prisma.gym.findUnique({
             where: {
                 id: id,
@@ -180,41 +182,21 @@ class GymService {
             },
         })
         if(!gym) throw BaseError.notFound("gym not found");
-
+        if(status !== verif){
+            verif = "REJECTED"
+            message = "Rejected gym"
+        }
         await prisma.gym.update({
             where: {
                 id: gym.id
             },
             data: {
-                verified: "APPROVED"
+                verified: verif
             }
         })
 
-        return "successfully verified gym"
+        return message;
     }
-
-    async rejectedGym(id){
-        const gym = await prisma.gym.findUnique({
-            where: {
-                id: id,
-                verified: "PENDING"
-            },
-        })  
-        if(!gym) throw BaseError.notFound("gym not found");
-
-        await prisma.gym.update({
-            where: {
-                id: gym.id
-            },
-            data: {
-                verified: "REJECTED"
-            }
-        })
-
-        return "Rejected gym"
-    }
-
-
 
     async getGymByOwnerId(userId){
         const gym = await prisma.gym.findMany({

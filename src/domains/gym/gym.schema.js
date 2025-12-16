@@ -8,6 +8,18 @@ const gymSchema = Joi.object({
     })
 })
 
+
+const verifiedStatus = Joi.object({
+  status: Joi.string()
+    .valid("APPROVED", "REJECTED")
+    .required()
+    .messages({
+      "any.only": "Status harus bernilai APPROVED atau REJECTED",
+      "any.required": "Status wajib diisi",
+      "string.base": "Status harus berupa string"
+    })
+})
+
 // const penjagaGymSchema = Joi.object({
 //     userId: Joi.number().min(1).required().messages({
 //         "number.empty": "User id is required",
@@ -142,5 +154,6 @@ export {
     createGymSchema,
     queryGymSchema,
     updateGymSchema,
+    verifiedStatus
 }
 
