@@ -91,7 +91,13 @@ const createGymSchema = Joi.object({
             "string.empty": "Facility is required",
             "string.base": "Facility label must be a string.",
             "string.min": "Facility label must be string",
-    })
+    }),
+    tag: Joi.string().min(4).max(150).required()
+        .messages({
+            "string.empty": "Tag is required.",
+            "string.min": "Tag must be at least 4 characters long.",
+            // "string.base": "Tag can only contain letters and spaces."
+    }),
 });
 
 
@@ -137,7 +143,11 @@ const updateGymSchema = Joi.object({
         .messages({
             "string.base": "Facility label must be a string.",
             "string.min": "Facility label must be string",
-    })
+    }),
+    tag: Joi.string().min(4).max(150).optional()
+        .messages({
+            "string.min": "Tag must be at least 4 characters long.",
+    }),
 })
 
 const queryGymSchema = Joi.object({

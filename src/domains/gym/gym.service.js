@@ -24,7 +24,8 @@ class GymService {
                     longitude: data.longitude,
                     jamOperasional: data.jamOperasional,
                     address: data.address,
-                    facility: data.fac
+                    facility: data.fac,
+                    tag: data.tag
                 }
             });
 
@@ -112,6 +113,8 @@ class GymService {
                 id: true,
                 address: true,
                 jamOperasional: true,
+                tag: true,
+                facility: true,
                 gymImage: {
                     select: {
                         id: true,

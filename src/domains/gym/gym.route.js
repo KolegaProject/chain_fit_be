@@ -248,7 +248,7 @@ class GymRoutes extends BaseRoutes {
     ]);
     this.router.get("/:id/paket-member/:paketId", [
       authTokenMiddleware.authenticate,
-      authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
+      // authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
       validateCredentials(paketGymSchema, "params"),
       tryCatch(paketMemberController.show),
     ]);
