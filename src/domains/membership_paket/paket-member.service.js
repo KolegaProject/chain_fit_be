@@ -25,34 +25,44 @@ class PaketMembershipService {
         if(!checkGym) throw BaseError.notFound("gym not found")
 
         try{
-            data.gymId = checkGym.id;
-            const createPaket = await prisma.membershipPackage.create({
-                data: data
+            const items = data.map((p)=>({
+                ...p,
+                gymId: checkGym.id
+            }));
+            const createPaket = await prisma.membershipPackage.createMany({
+                data: items
             })
-            return createPaket;
+            if(createPaket.count < 1){
+                throw new Error("failed to create membership package")
+            }
+            return {message: "Succesfully add data"}
         }catch(err){
             if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
                 // ini lebih cocok 409 / conflict daripada notFound
-                throw BaseError.conflict('Name package is already used for this gym');
-                }
+                throw new Error('Name package is already used for this gym');
+            }
                 throw err;
         }
     }
 
-    async getAllPaket(gymId){
+    async getAllPaket(gymId, userId){
+        const checkOwnerOrStaff = this.checkOwnerOrStaff(gymId, userId);
         const paket = await prisma.membershipPackage.findMany({
             where: {
                 gymId: gymId,
+                ...(!checkOwnerOrStaff ? {}: {gym: {verified: "APPROVED"}})
             }
         })
         return paket;
     }
 
-    async getPaketById(gymId, paketId){
+    async getPaketById(gymId, paketId, userId){
+        const checkOwnerOrStaff = this.checkOwnerOrStaff(gymId, userId);
         const paket = await prisma.membershipPackage.findFirst({
             where: {
                 id: paketId,
-                gymId: gymId
+                gymId: gymId,
+                ...(!checkOwnerOrStaff ? {}: {gym: {verified: "APPROVED"}})
             }
         })
         if(!paket) throw BaseError.notFound("Paket not found");
@@ -137,6 +147,21 @@ class PaketMembershipService {
             }
             throw err;
         }
+    }
+
+    async checkOwnerOrStaff(gymId, userId){
+        const checkOwnerOrStaff = userId ? await prisma.gym.findFirst({
+            where: {
+                id: gymId,
+                OR: [
+                    {staff: {some: {id: userId}}},
+                    {ownerId: userId},
+                ]
+        }}
+        ): null;
+        console.log(checkOwnerOrStaff);
+        
+        return checkOwnerOrStaff;
     }
     
 }

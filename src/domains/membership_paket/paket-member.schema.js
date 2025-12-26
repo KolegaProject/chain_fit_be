@@ -1,6 +1,6 @@
 import Joi from "joi";
 
-const createPaketGymSchema = Joi.object({
+const paketItemSchema = Joi.object({
     name: Joi.string().required().min(4)
         .messages({
             "string.empty": "paket name is required.",
@@ -17,7 +17,31 @@ const createPaketGymSchema = Joi.object({
             "number.min": "DurationDays must be number at least 1",
             "number.base": "DurationDays must be int"
     }),
+    benefit: Joi.array()
+        .items(
+            Joi.string().trim().min(3).required().messages({
+            "string.base": "Benefit must be a string.",
+            "string.empty": "Benefit item is required",
+            "string.min": "Benefit must be at least 3 characters",
+            "any.required": "Benefit item is required",
+            })
+        )
+        .min(1)
+        .required()
+        .messages({
+            "array.base": "Benefit must be an array.",
+            "array.min": "Benefit must have at least 1 item.",
+            "any.required": "Benefit is required",
+    }),
 });
+
+const createPaketGymSchema = Joi.alternatives().try(
+  paketItemSchema, // single object
+  Joi.array().items(paketItemSchema).min(1) // array of objects
+).messages({
+  "alternatives.match": "Body must be a paket object or an array of paket objects.",
+});
+
 
 const updatePaketGymSchema = Joi.object({
     name: Joi.string().optional().min(4)
@@ -32,6 +56,22 @@ const updatePaketGymSchema = Joi.object({
     durationDays: Joi.number().min(1).optional().messages({
             "number.min": "DurationDays must be number at least 1",
             "number.base": "DurationDays must be int"
+    }),
+    benefit: Joi.array()
+        .items(
+            Joi.string().trim().min(3).required().messages({
+            "string.base": "Benefit must be a string.",
+            "string.empty": "Benefit item is required",
+            "string.min": "Benefit must be at least 3 characters",
+            "any.required": "Benefit item is required",
+            })
+        )
+        .min(1)
+        .required()
+        .messages({
+            "array.base": "Benefit must be an array.",
+            "array.min": "Benefit must have at least 1 item.",
+            "any.required": "Benefit is required",
     }),
 });
 

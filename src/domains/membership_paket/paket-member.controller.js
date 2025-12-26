@@ -3,23 +3,33 @@ import paketMemberService from "./paket-member.service.js";
 
 class PaketMembershipController {
     async createPaket(req, res){
-        const {name, price, durationDays} = req.body;
+        const body = req.body;
+        
+          for (const p of body) {
+            if (!Array.isArray(p.benefit)) {
+                throw new Error(
+                    `Benefit must be an array. Example: ["Akses gym bebas","Foto bareng mas rusdi"]`
+                );
+            }
+        }
         const userId = req.user.id;
         const gymId = parseInt(req.params.id);
-        const paket = await paketMemberService.createPaket({name, price, durationDays}, userId, gymId);
+        const paket = await paketMemberService.createPaket(body, userId, gymId);
         return createdResponse(res, paket);
     }   
     
     async index(req, res){
         const gymId = parseInt(req.params.id);
-        const paket = await paketMemberService.getAllPaket(gymId);
+        const userId = req.user.id;
+        const paket = await paketMemberService.getAllPaket(gymId, userId);
         return successResponse(res, paket) 
     }
     
     async show(req, res){
         const gymId = parseInt(req.params.id);
         const paketId = parseInt(req.params.paketId);
-        const paket = await paketMemberService.getPaketById(gymId, paketId)
+        const userId = req.user.id;
+        const paket = await paketMemberService.getPaketById(gymId, paketId, userId)
         return successResponse(res, paket);
     }
     
@@ -27,8 +37,8 @@ class PaketMembershipController {
         const gymId = parseInt(req.params.id);
         const paketId = parseInt(req.params.paketId);
         const userId = req.user.id;
-        const {name, price, durationDays} = req.body;
-        const paket = await paketMemberService.updatePaket(gymId, paketId, userId, {name, price, durationDays})
+        const {name, price, durationDays, benefit} = req.body;
+        const paket = await paketMemberService.updatePaket(gymId, paketId, userId, {name, price, durationDays, benefit})
         
         return successResponse(res, paket)
     }

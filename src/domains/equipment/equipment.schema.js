@@ -19,7 +19,12 @@ const createEquipmentSchema = Joi.object({
     videoURL: Joi.string().uri().optional().messages({
         "string.uri": "Video URL must be a valid URI.",
         "string.base": "Video URL must be a string."
-    })
+    }),
+    jumlah: Joi.number().min(1).required().messages({
+        "number.empty": "Jumlah alat is required",
+        "number.min": "Jumlah alat gym must be number at least 1",
+        "string.base": "Jumlah alat must be int"
+    }),
 })
 
 const updateEquipmentSchema = Joi.object({
@@ -36,7 +41,12 @@ const updateEquipmentSchema = Joi.object({
     videoURL: Joi.string().uri().optional().messages({
         "string.uri": "Video URL must be a valid URI.",
         "string.base": "Video URL must be a string."
-    })
+    }),
+    jumlah: Joi.string().min(1).optional().messages({
+        "number.empty": "Jumlah alat is required",
+        "number.min": "Jumlah alat gym must be number at least 1",
+        "string.base": "Jumlah alat must be string"
+    }),
 });
 
 

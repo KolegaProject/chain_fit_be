@@ -53,6 +53,12 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum StatusGym {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model SystemLog {
   id          Int      @id @default(autoincrement())
   user        User?    @relation(fields: [userId], references: [id])
@@ -65,6 +71,8 @@ model SystemLog {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+
 
 
 model User {
@@ -102,6 +110,7 @@ model Gym {
   address        String
   jamOperasional String
   facility      Json?
+  tag            String?
 
   ownerId Int?
   owner   User?     @relation("GymOwner", fields: [ownerId], references: [id])
@@ -111,11 +120,10 @@ model Gym {
   equipments        Equipment[]
   transactions      Transaction[]
   attendances       Attendance[]
-  // tutorialVideos    TutorialVideo[]
   equipmentHistories EquipmentHistory[]
   membershipPackages MembershipPackage[]
   gymImage           GymImage[]
-  isVerified Boolean @default(false)
+  verified StatusGym @default(PENDING)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -142,6 +150,7 @@ model MembershipPackage {
   price        Decimal   @db.Decimal(12, 2)
   durationDays Int     
   gymId Int
+  benefit   Json?
   gym       Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
   memberships  Membership[]
@@ -237,15 +246,16 @@ model Equipment {
   healthStatus EquipmentHealthStatus @default(BAIK)
   photo        String?
   videoURL       String?
+  jumlah        Int @default(1)
 
   gym            Gym               @relation(fields: [gymId], references: [id], onDelete: Cascade)
   histories      EquipmentHistory[]
-  // tutorialVideos TutorialVideo[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([gymId])
+  @@unique([gymId, name])
 }
 
 // semua user kecuali admin

@@ -6,7 +6,7 @@ import { changePasswordSchema } from "../auth/auth-schema.js";
 
 // GYM DOMAIN
 import gymController from "./gym.controller.js";
-import { createGymSchema, getGymSchema, gymSchema, queryGymSchema, updateGymSchema } from "./gym.schema.js";
+import { createGymSchema, getGymSchema, gymSchema, queryGymSchema, updateGymSchema, verifiedStatus } from "./gym.schema.js";
 
 // PAKET MEMBER DOMAIN
 import {
@@ -64,6 +64,7 @@ class GymRoutes extends BaseRoutes {
       authTokenMiddleware.authenticate,
       authTokenMiddleware.authorizeUser(["ADMIN"]),
       validateCredentials(gymSchema, "params"),
+      validateCredentials(verifiedStatus),
       tryCatch(gymController.verified),
     ]);
 
@@ -247,7 +248,7 @@ class GymRoutes extends BaseRoutes {
     ]);
     this.router.get("/:id/paket-member/:paketId", [
       authTokenMiddleware.authenticate,
-      authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
+      // authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
       validateCredentials(paketGymSchema, "params"),
       tryCatch(paketMemberController.show),
     ]);
