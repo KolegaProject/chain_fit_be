@@ -4,7 +4,7 @@ import gymService from "./gym.service.js";
 class GymController {
 
     async create(req, res){
-        const {namaGym, maxCapacity, address, jamOperasional, lat, long, facility, tag} = req.body;
+        const {namaGym, maxCapacity, address, jamOperasional, lat, long, facility, tag, description} = req.body;
         const maxCp = Number(maxCapacity);
         const latitude = Number(lat);
         const longitude = Number(long);
@@ -12,9 +12,10 @@ class GymController {
         if(!Array.isArray(fac)) throw new Error(`Facility must be a JSON array string. Example: ["Sauna","Loker"]`)
         const ownerId = req.user.id;
         const img = req.files.image;
+        console.log(img);
         
 
-        const gym = await gymService.createGym({namaGym, maxCp, address, ownerId, jamOperasional, latitude, longitude, fac, tag}, img)
+        const gym = await gymService.createGym({namaGym, maxCp, address, ownerId, jamOperasional, latitude, longitude, fac, tag, description}, img)
 
         if(!gym) throw new Error("Failed to create gym");
 
@@ -24,7 +25,7 @@ class GymController {
     async update(req, res){
             let maxCapacity, latitude, longitude, facility;
 
-            const {name, maxCp, address, jamOperasional, lat, long, fac, tag} = req.body;
+            const {name, maxCp, address, jamOperasional, lat, long, fac, tag, description} = req.body;
             if(maxCapacity) maxCapacity = Number(maxCp);
             if(lat) latitude = Number(lat);
             if(long) longitude = Number(long);
@@ -32,7 +33,7 @@ class GymController {
             const ownerId = req.user.id;
             const id = Number(req.params.id);
 
-            const gym = await gymService.updateGym({name, maxCapacity, address, jamOperasional, latitude, longitude, facility, tag}, ownerId, id);
+            const gym = await gymService.updateGym({name, maxCapacity, address, jamOperasional, latitude, longitude, facility, tag, description}, ownerId, id);
 
             if(!gym) throw new Error("Failed to update gym");
 
