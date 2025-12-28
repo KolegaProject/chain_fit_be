@@ -10,6 +10,12 @@ import { uploadFile } from "../../utils/saveImage.js";
 
 class AuthService {
 
+    /**
+     * Register Owner User
+     * @param {Object} userData - The user data for registration
+     * @returns {Object} - Success message upon registration
+     * @throws {joi.ValidationError} - If email or username already exists
+     */
     async registerOwner(userData){
         const emailExist = await prisma.user.findUnique({
             where: {
@@ -61,8 +67,13 @@ class AuthService {
 
     }
 
-
-    // all user
+    /**
+     * Login User
+     * @param {string} username - The username or email of the user
+     * @param {string} password - The password of the user
+     * @returns {Object} - Access and refresh tokens upon successful login
+     * @throws {BaseError} - If credentials are invalid
+     */
     async login(username, password) {
         let user = await prisma.user.findFirst({
             where: {
@@ -94,7 +105,12 @@ class AuthService {
     }
 
 
-    // register user
+    /**
+     * Register User
+     * @param {Object} data - The user data for registration
+     * @returns {Object} - Success message upon registration
+     * @throws {joi.ValidationError} - If email or username already exists
+     */
     async register(data) {
         const emailExist = await prisma.user.findUnique({
             where: {
@@ -145,7 +161,12 @@ class AuthService {
         return {message: "User registered successfully."};
     }
 
-    
+    /**
+     * Get User Profile
+     * @param {number} id - The ID of the user
+     * @returns {Object} - User profile data
+     * @throws {BaseError} - If user is not found
+     */
     async getProfile(id) {
         const u = await prisma.user.findUnique({
         where: { id: id },
@@ -170,6 +191,15 @@ class AuthService {
         return { user: { id:u.id, username:u.username, email:u.email, role:u.role, profileImage:u.profileImage }, gyms, defaultGymId };
     }
 
+    /**
+     * Update User Profile
+     * @param {number} id - The ID of the user
+     * @param {Object} data - The profile data to update
+     * @param {Object} imgProfile - The profile image file
+     * @returns {Object} - Updated user profile data
+     * @throws {BaseError} - If user is not found
+     * @throws {joi.ValidationError} - If email is already taken
+     */
     async updateProfile(id, data, imgProfile) {
         const user = await prisma.user.findUnique({
             where: {
@@ -222,6 +252,15 @@ class AuthService {
         return updatedUser;
     }
 
+    /**
+     * Update User Password
+     * @param {number} id - The ID of the user
+     * @param {string} oldPassword - The current password of the user
+     * @param {string} newPassword - The new password to set
+     * @returns {Object} - Success message upon password update
+     * @throws {BaseError} - If user is not found
+     * @throws {joi.ValidationError} - If old password is incorrect or new password is same as old password
+     */
     async updatePasswordProfile(id, oldPassword, newPassword) {
         const user = await prisma.user.findUnique({
             where: {
@@ -256,6 +295,12 @@ class AuthService {
         return { message: "Password updated successfully" };
     }
     
+    /**
+     * Refresh Access Token
+     * @param {string} token - The refresh token
+     * @returns {string} - New access token
+     * @throws {BaseError} - If token is invalid or user is not found
+     */
     async refreshToken(token) {
         
         const decoded = parseJWT(token);
@@ -279,6 +324,12 @@ class AuthService {
         return accessToken;
     }
 
+    /**
+     * Generate Email for Reset Password
+     * @param {string} email - The email of the user
+     * @returns {Object} - Success message upon sending reset password email
+     * @throws {BaseError} - If user is not found
+     */
     async generateEmailResetPassword(email){
         const user = await prisma.user.findFirst({
             where: {
@@ -311,6 +362,11 @@ class AuthService {
         return {message: "Successfully send reset password. Please check your email to reset your password"};
     }
 
+    /**
+     * Verify Reset Password Token
+     * @param {string} token - The reset password token
+     * @returns {Object} - Status and message of verification
+     */
     async verifyResetPassword(token){
         const decoded = parseJWT(token);
 
@@ -338,6 +394,13 @@ class AuthService {
         return {status: 200, message: "Password verification successfully", data: token}
     }
 
+    /**
+     * Reset Password
+     * @param {string} newPassword - The new password to set
+     * @param {string} token - The reset password token
+     * @returns {Object} - Success message upon password reset
+     * @throws {BaseError} - If user is not found
+     */
     async resetPassword(newPassword, token){
         const decoded = parseJWT(token);
         console.log(decoded);
@@ -368,42 +431,6 @@ class AuthService {
 
         return {message: "Password reset succesfully"}
     }
-
-    // async verify(token) {
-    //     const decoded = parseJWT(token);
-        
-    //     if (!decoded) {
-    //         return { status: 400, message: "Invalid token" };
-    //     }
-    //     console.log(decoded.id);
-        
-
-    //     const user = await  prisma.user.findUnique({
-    //         where: {
-    //             id: decoded.id
-    //         }
-    //     });
-
-    //     if (!user) {
-    //         return { status: 400, message: "User Not Found" }
-    //     }
-
-    //     if (user.verifiedAt){
-    //         return { status: 400, message: "Email already verified" };
-    //     }
-
-    //     await prisma.user.update({
-    //         where: {
-    //             id: user.id
-    //         },
-    //         data: {
-    //             verifiedAt: new Date()
-    //         }
-    //     });
-
-    //     return { status: 200, message: "Email verified successfully" };
-    // }
-
 }
 
 export default new AuthService();
