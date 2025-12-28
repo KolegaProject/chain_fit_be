@@ -2,6 +2,10 @@ import { successResponse } from "../../utils/response.js";
 import AuthService from "./auth-service.js";
 
 class AuthController {
+    /**
+     * @route POST /auth/login
+     * @desc Login user
+     */
     async login(req, res) {
         const { username, password } = req.body;
 
@@ -14,6 +18,10 @@ class AuthController {
         return successResponse(res, response);
     }
 
+    /**
+     * @route POST /auth/register-owner
+     * @desc Register owner
+     */
     async registerOwner(req, res){
         const {name, username, email, password} = req.body;
 
@@ -28,6 +36,10 @@ class AuthController {
         return successResponse(res, response);
     }
 
+    /**
+     * @route POST /auth/register
+     * @desc Register user
+     */
     async register(req, res) {
 
         const { name, username, password, email} = req.body;
@@ -40,7 +52,10 @@ class AuthController {
         return successResponse(res, message);
     }
 
-
+    /**
+     * @route GET /auth/profile
+     * @desc Get user profile
+     */
     async getProfile(req, res){
         const user = await AuthService.getProfile(req.user.id);
 
@@ -51,6 +66,10 @@ class AuthController {
         return successResponse(res, user);
     }
 
+    /**
+     * @route PUT /auth/profile
+     * @desc Update user profile
+     */
     async updateProfile(req, res){
         const { email, name } = req.body;
         let imageProfile = null;
@@ -67,7 +86,10 @@ class AuthController {
         return successResponse(res, user);
     }
 
-
+    /**
+     * @route PUT /auth/password
+     * @desc Update user password
+     */
     async updatePassword(req, res){
         const { old_password, new_password, confirm_password } = req.body;
 
@@ -84,6 +106,10 @@ class AuthController {
         return successResponse(res, message);
     }
 
+    /**
+     * @route POST /auth/refresh-token
+     * @desc Refresh access token
+     */
     async refreshToken(req, res) {
         const { refresh_token } = req.body;
 
@@ -96,6 +122,10 @@ class AuthController {
         return successResponse(res, { access_token: token });
     }
 
+    /**
+     * @route POST /auth/reset-password
+     * @desc Generate email reset password
+     */
     async emailResetPassword(req, res){
         const {email} = req.body;
 
@@ -106,6 +136,10 @@ class AuthController {
         return successResponse(res, response)
     }
 
+    /**
+     * @route GET /auth/reset-password/verify/:token
+     * @desc Verify reset password token
+     */
     async verifyResetPassword(req, res){
         const {token} = req.params;
 
@@ -120,6 +154,10 @@ class AuthController {
         return res.redirect(`${process.env.FE_URL}/reset-password?verify=success&token=${response.data}`);
     }
 
+    /**
+     * @route POST /auth/reset-password/update
+     * @desc Reset user password
+     */
     async resetPassword(req, res){
         const {new_password, confirm_password, token } = req.body;
 
