@@ -119,7 +119,7 @@ class EquipmentService {
 
     if (imageUrl) {
       const gymUrlPath = `equipment-images/${gymId}`;
-      const uploadedUrls = uploadFile(gymUrlPath, imageUrl);
+      const uploadedUrls = await uploadFile(gymUrlPath, imageUrl);
       if (!uploadedUrls || !uploadedUrls.length) {
         throw new Error("Failed to upload equipment image");
       }
