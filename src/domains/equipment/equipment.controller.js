@@ -7,8 +7,8 @@ class EquipmentController {
         const gymId =  Number(req.params.id);
         const userId = req.user.id;
         const imageUrl = req.files?.image;
-        const {name, videoURL, jumlah} = req.body;
-        const equipment = await equipmentService.createEquipment(gymId, userId, {name, videoURL, jumlah}, imageUrl)
+        const {name, videoURL, jumlah, description} = req.body;
+        const equipment = await equipmentService.createEquipment(gymId, userId, {name, videoURL, jumlah, description}, imageUrl)
 
         if(!equipment) throw new Error("Failed to create equipment");
         return successResponse(res, equipment);

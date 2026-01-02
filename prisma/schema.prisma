@@ -252,6 +252,7 @@ model Equipment {
   healthStatus EquipmentHealthStatus @default(BAIK)
   photo        String?
   videoURL       String?
+  description    String?
   jumlah        Int @default(1)
 
   gym            Gym               @relation(fields: [gymId], references: [id], onDelete: Cascade)

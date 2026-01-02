@@ -25,6 +25,11 @@ const createEquipmentSchema = Joi.object({
         "number.min": "Jumlah alat gym must be number at least 1",
         "string.base": "Jumlah alat must be int"
     }),
+    description: Joi.string().required()
+        .messages({
+            "string.empty": "Description is required.",
+            "string.base": "Gym name can only contain letters and spaces."
+    }),
 })
 
 const updateEquipmentSchema = Joi.object({
