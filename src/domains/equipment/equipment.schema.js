@@ -20,10 +20,10 @@ const createEquipmentSchema = Joi.object({
         "string.uri": "Video URL must be a valid URI.",
         "string.base": "Video URL must be a string."
     }),
-    jumlah: Joi.number().min(1).required().messages({
-        "number.empty": "Jumlah alat is required",
-        "number.min": "Jumlah alat gym must be number at least 1",
-        "string.base": "Jumlah alat must be int"
+    jum: Joi.string().min(1).required().messages({
+        "string.empty": "Jumlah alat is required",
+        "string.min": "Jumlah alat gym must be number at least 1",
+        "string.base": "Jumlah alat must be string"
     }),
     description: Joi.string().required()
         .messages({
