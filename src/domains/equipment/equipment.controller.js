@@ -17,11 +17,11 @@ class EquipmentController {
 
     async update(req, res){
         const equipId = Number(req.params.equipId);
-        const {name, healthStatus, videoURL, jumlah: jmlRow} = req.body;
+        const {name, healthStatus, videoURL, jumlah: jmlRow, description} = req.body;
         const gymId = Number(req.params.id);
         const userId = req.user.id;
         const imageUrl = req.files?.image;
-        const equipment = await equipmentService.updateEquipment(equipId, gymId, userId, {name, healthStatus, videoURL,  jumlah: jmlRow == null? undefined: Number(jmlRow)}, imageUrl);
+        const equipment = await equipmentService.updateEquipment(equipId, gymId, userId, {name, healthStatus, videoURL,  jumlah: jmlRow == null? undefined: Number(jmlRow), description}, imageUrl);
         if(!equipment) throw new Error("Failed to update equipment");
         return successResponse(res, equipment);
     }
