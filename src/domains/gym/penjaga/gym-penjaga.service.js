@@ -103,7 +103,8 @@ class GymPenjagaService {
                 name: true,
                 email: true,
                 role: true,
-
+                password: true,
+                profileImage: true
             }
         });
 
