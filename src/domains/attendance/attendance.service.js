@@ -192,6 +192,23 @@ class AttendanceService {
                 gymId: gymId,
                 
             },
+            select: {
+                id: true,
+                membership: {
+                    select: {
+                        user: {
+                            select: {
+                                name: true,
+                                email: true
+                            }
+                        }
+                    }
+                },
+                checkInAt: true,
+                checkOutAt: true,
+                createdBy: true
+            }
+            
         });
         return attendance;
     }

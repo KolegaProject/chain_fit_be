@@ -155,18 +155,16 @@ class GymMembershipService {
 
             if (!membership) throw BaseError.notFound("Membership not found");
 
-            const expired = membership.endDate < now || membership.status === "TIDAK";
-            if (!expired) {
-                throw BaseError.badRequest("Membership still activate");
-            }
 
             const paket = await tx.membershipPackage.findFirst({
                 where: { id: paketId, gymId: membership.gymId },
             });
             if (!paket) throw BaseError.notFound("Paket gym not found");
-
-            const startDate = now;
-            const endDate = addDays(startDate, paket.durationDays);
+            
+            const isActive = membership.status === "AKTIF" && membership.endDate > now;
+            const startDate = isActive ? membership.startDate : now;
+            const baseEnd = isActive ? membership.endDate : now;
+            const endDate = addDays(baseEnd, paket.durationDays);
 
             await tx.gymCashflow.create({
                 data: {
