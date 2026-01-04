@@ -14,6 +14,17 @@ class AuthController {
         return successResponse(res, response);
     }
 
+    async loginWithSocialAccount(req, res) {
+        const {username, provider} = req.body;
+
+        const response = await AuthService.loginWithSocialAccount(provider, username);
+        if(!response) {
+            throw Error("Failed to login with social account");
+        }
+
+        return successResponse(res, response);
+    }
+
     async registerOwner(req, res){
         const {name, username, email, password} = req.body;
 

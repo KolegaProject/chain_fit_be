@@ -3,7 +3,7 @@ import AuthController from "./auth-controller.js";
 
 import tryCatch from "../../utils/tryCatcher.js";
 import validateCredentials from '../../middlewares/validate-credentials-middleware.js';
-import { registerSchema, loginSchema, changePasswordSchema, refreshTokenSchema, profileSchema, resetPasswordSchema, emailResetPasswordSchema } from './auth-schema.js';
+import { registerSchema, loginSchema, changePasswordSchema, refreshTokenSchema, profileSchema, resetPasswordSchema, emailResetPasswordSchema, socialLoginSchema } from './auth-schema.js';
 import AuthMiddleware from "../../middlewares/auth-token-middleware.js";
 
 class AuthRoutes extends BaseRoutes {
@@ -15,6 +15,10 @@ class AuthRoutes extends BaseRoutes {
         this.router.post("/login", [
             validateCredentials(loginSchema),
             tryCatch(AuthController.login)
+        ]);
+        this.router.post("/login-social-account", [
+            validateCredentials(socialLoginSchema),
+            tryCatch(AuthController.loginWithSocialAccount)
         ]);
         this.router.post("/register-owner", [
             validateCredentials(registerSchema),

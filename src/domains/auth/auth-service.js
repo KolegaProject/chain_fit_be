@@ -93,6 +93,32 @@ class AuthService {
         return { access_token: accessToken, refresh_token: refreshToken };
     }
 
+    // Login via Google / Facebook
+    async loginWithSocialAccount(provider, username) {
+        const allowedProviders = ["google", "facebook"];
+
+        // if (!username) {
+        //     throw BaseError.badRequest("Username is required");
+        // }
+
+        if (!allowedProviders.includes(provider)) {
+            throw BaseError.badRequest("Unsupported provider.");
+        }
+
+        const user = await prisma.user.findFirst({
+            where: {
+                username: username
+            }
+        });
+        if (!user) {
+            throw BaseError.badRequest("Invalid credentials"); // atau notFound bila ingin 404
+        }
+
+        const accessToken = generateToken({ id: user.id, account_type: user.role }, "1d");
+        const refreshToken = generateToken(user.id, "365d");
+
+        return { access_token: accessToken, refresh_token: refreshToken};
+    }
 
     // register user
     async register(data) {
