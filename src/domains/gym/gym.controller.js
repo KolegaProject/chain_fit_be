@@ -26,7 +26,7 @@ class GymController {
             let maxCapacity, latitude, longitude, facility;
 
             const {name, maxCp, address, jamOperasional, lat, long, fac, tag, description} = req.body;
-            if(maxCapacity) maxCapacity = Number(maxCp);
+            if(maxCp) maxCapacity = Number(maxCp);
             if(lat) latitude = Number(lat);
             if(long) longitude = Number(long);
             if(fac) facility = JSON.parse(fac)
