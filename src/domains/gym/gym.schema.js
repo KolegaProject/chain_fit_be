@@ -59,7 +59,7 @@ const createGymSchema = Joi.object({
             "string.min": "Address must be at least 4 characters long.",
             "string.base": "Username can only contain letters and spaces."
     }),
-    jamOperasional: Joi.string().min(4).max(150).required()
+    jamOperasional: Joi.string().min(4).max(170).required()
         .messages({
             "string.empty": "Jam Operational is required.",
             "string.min": "jam Operational be at least 4 characters long.",
