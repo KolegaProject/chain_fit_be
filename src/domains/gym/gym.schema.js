@@ -90,7 +90,7 @@ const createGymSchema = Joi.object({
       "any.required": "Longitude is required.",
       "string.pattern.base": "Longitude must be a valid numeric string (e.g. 106.816666).",
     }),
-    description: Joi.string().optional()
+    description: Joi.string().required()
         .messages({
             "string.empty": "Description is required.",
             "string.base": "Gym name can only contain letters and spaces."
@@ -157,6 +157,10 @@ const updateGymSchema = Joi.object({
     tag: Joi.string().min(4).max(150).optional()
         .messages({
             "string.min": "Tag must be at least 4 characters long.",
+    }),
+    description: Joi.string().optional()
+        .messages({
+            "string.base": "Gym name can only contain letters and spaces."
     }),
 })
 
