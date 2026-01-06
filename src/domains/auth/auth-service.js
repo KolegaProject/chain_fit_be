@@ -214,11 +214,11 @@ class AuthService {
                     username: data.username
                 }
             });
-            if (usernameExist) {
+            if (usernameExist && usernameExist.id != user.id) {
                 let validation = "Username already taken.";
                 let message = {
                         message: "Username already taken.",
-                        path: ["email"]
+                        path: ["username"]
                 };
                 throw new joi.ValidationError(validation, message);
             }
