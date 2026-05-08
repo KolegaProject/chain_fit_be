@@ -99,6 +99,10 @@ model User {
   transactions Transaction[]
   attendancesCreated Attendance[]
   equipmentHistoriesReported EquipmentHistory[]
+  updatedCashflows GymCashflow[] @relation("GymCashflowUpdatedBy")
+  deletedCashflows GymCashflow[] @relation("GymCashflowDeletedBy")
+
+
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
@@ -129,6 +133,7 @@ model Gym {
   equipmentHistories EquipmentHistory[]
   membershipPackages MembershipPackage[]
   gymImage           GymImage[]
+  gymCashflow        GymCashflow[]
   verified StatusGym @default(PENDING)
 
   createdAt DateTime @default(now())
@@ -290,12 +295,31 @@ model EquipmentHistory {
 }
 
 // cashflow
-
+// 
 model GymCashflow {
-  id    Int       @id @default(autoincrement())
-  name String     
-  jumlah Decimal  @db.Decimal(12, 2)
-  type CashflowType   
+  id          Int             @id @default(autoincrement())
+  gymId        Int
+  name        String
+  amount      Decimal         @db.Decimal(12, 2)
+  transactionType TransactionType   // PENDAPATAN / PENGELUARAN
+  cashflowType    CashflowType      // CASH / CASHLESS
+  date        DateTime
+  note        String?
+
+  updatedById     Int?
+  deletedById     Int?
+  isDeleted       Boolean         @default(false)
+
+  gym         Gym             @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  updatedBy       User?           @relation("GymCashflowUpdatedBy", fields: [updatedById], references: [id])
+  deletedBy       User?           @relation("GymCashflowDeletedBy", fields: [deletedById], references: [id])
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([gymId])
+  @@index([date])
 }
 
 // owner dan penajaga
