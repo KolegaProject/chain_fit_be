@@ -1,10 +1,9 @@
 import BaseError from "../../base_classes/base-error.js";
 import prisma from "../../config/db.js";
-import { snap} from "../../config/midtrans.js";
+import { snap } from "../../config/midtrans.js";
 import crypto, { randomUUID } from "crypto";
 
 class MembershipTransactionService {
-  
   async generateOrderId(gymId, transactionId) {
     const rand = randomUUID().replace(/-/g, "").slice(0, 10);
     return `GYM-${gymId}-${transactionId}-${rand}`;
@@ -12,7 +11,7 @@ class MembershipTransactionService {
 
   async createSnap(packageId, userId, gymId) {
     const now = new Date();
-    const threeDays = 3*24*60*60*1000;
+    const threeDays = 3 * 24 * 60 * 60 * 1000;
     const renewAllowedFrom = new Date(now.getTime() + threeDays);
     return prisma.$transaction(async (tx) => {
       // Cek package + gym
@@ -27,7 +26,7 @@ class MembershipTransactionService {
       });
 
       if (!membershipPackage) {
-        throw BaseError.notFound('membership package not found');
+        throw BaseError.notFound("membership package not found");
       }
 
       // Cek apakah user sudah punya membership AKTIF di gym ini
@@ -35,7 +34,7 @@ class MembershipTransactionService {
         where: {
           userId: userId,
           gymId: gymId,
-          status: 'AKTIF',
+          status: "AKTIF",
           endDate: {
             gte: renewAllowedFrom, // masih berlaku
           },
@@ -43,11 +42,11 @@ class MembershipTransactionService {
       });
 
       if (existingMembership) {
-        throw BaseError.badRequest('user already has an active membership');
+        throw BaseError.badRequest("user already has an active membership");
       }
 
       // Hitung harga + admin fee
-      const adminFee = 2000; 
+      const adminFee = 2000;
       const packagePrice = Number(membershipPackage.price);
       const grossAmount = packagePrice + adminFee;
 
@@ -57,7 +56,7 @@ class MembershipTransactionService {
       });
 
       if (!user) {
-        throw BaseError.notFound('user not found');
+        throw BaseError.notFound("user not found");
       }
 
       // Buat Transaction di DB (status default PENDING)
@@ -67,13 +66,13 @@ class MembershipTransactionService {
           gymId: gymId,
           date: new Date(),
           amount: grossAmount,
-          type: 'PENDAPATAN',
+          type: "PENDAPATAN",
           note: `Membership package purchase: ${membershipPackage.name}`,
         },
       });
 
       // Generate orderId (wajib unik untuk Midtrans)
-      const orderId = await this.generateOrderId(gymId, transaction.id); 
+      const orderId = await this.generateOrderId(gymId, transaction.id);
 
       // Susun parameter Snap
       const parameter = {
@@ -96,14 +95,14 @@ class MembershipTransactionService {
             name: `${membershipPackage.name} ${membershipPackage.durationDays} Days`,
           },
           {
-            id: 'admin_fee',
+            id: "admin_fee",
             price: adminFee,
             quantity: 1,
-            name: 'Transaction Fee',
+            name: "Transaction Fee",
           },
         ],
         metadata: {
-          type: 'membership',
+          type: "membership",
           transactionId: transaction.id,
           packageId: membershipPackage.id,
           gymId,
@@ -115,7 +114,7 @@ class MembershipTransactionService {
       const snapData = await snap.createTransaction(parameter);
 
       if (!snapData) {
-        throw new Error('Failed to create snap');
+        throw new Error("Failed to create snap");
       }
 
       // Update Transaction dengan orderId
@@ -137,7 +136,6 @@ class MembershipTransactionService {
       };
     });
   }
- 
 
   async updateTransactionStatus(data) {
     const {
@@ -149,7 +147,7 @@ class MembershipTransactionService {
     } = data;
 
     console.log(
-      `Transaction notification received. Order ID: ${order_id}. Transaction status: ${transaction_status}. Fraud status: ${fraud_status}`
+      `Transaction notification received. Order ID: ${order_id}. Transaction status: ${transaction_status}. Fraud status: ${fraud_status}`,
     );
 
     await prisma.$transaction(async (tx) => {
@@ -160,50 +158,48 @@ class MembershipTransactionService {
       });
 
       if (!transaction) {
-        console.error('Transaction not found for orderId', order_id);
+        console.error("Transaction not found for orderId", order_id);
         return;
       }
 
       // Idempotency: kalau sudah final, jangan proses ulang
       if (
-        transaction.status === 'PAID' ||
-        transaction.status === 'FAILED' ||
-        transaction.status === 'EXPIRED'
+        transaction.status === "PAID" ||
+        transaction.status === "FAILED" ||
+        transaction.status === "EXPIRED"
       ) {
-        console.log('Transaction already processed', transaction.id);
+        console.log("Transaction already processed", transaction.id);
         return;
       }
 
       // Map status Midtrans -> status lokal
-      let newStatus = 'PENDING';
+      let newStatus = "PENDING";
 
-      if (transaction_status === 'capture') {
+      if (transaction_status === "capture") {
         // for credit card
-        if (fraud_status === 'accept') {
-          newStatus = 'PAID';
+        if (fraud_status === "accept") {
+          newStatus = "PAID";
         } else {
-          newStatus = 'FAILED';
+          newStatus = "FAILED";
         }
-
-      } else if (transaction_status === 'settlement') {
-        newStatus = 'PAID';
-      } else if (transaction_status === 'cancel' || transaction_status === 'deny') {
-        newStatus = 'FAILED';
-
-      } else if (transaction_status === 'expire') {
-        newStatus = 'EXPIRED';
-
-      } else if (transaction_status === 'pending') {
-        newStatus = 'PENDING';
-
+      } else if (transaction_status === "settlement") {
+        newStatus = "PAID";
+      } else if (
+        transaction_status === "cancel" ||
+        transaction_status === "deny"
+      ) {
+        newStatus = "FAILED";
+      } else if (transaction_status === "expire") {
+        newStatus = "EXPIRED";
+      } else if (transaction_status === "pending") {
+        newStatus = "PENDING";
       } else {
-        newStatus = 'FAILED';
-
+        newStatus = "FAILED";
       }
 
       // Update Transaction (status + paymentMethod)
       console.log("update status transaction");
-      
+
       const updatedTx = await tx.transaction.update({
         where: { id: transaction.id },
         data: {
@@ -213,21 +209,24 @@ class MembershipTransactionService {
       });
 
       // checkNewStatus
-      if (newStatus !== 'PAID') {
-        console.log('Transaction not PAID, skip membership creation', updatedTx.id);
+      if (newStatus !== "PAID") {
+        console.log(
+          "Transaction not PAID, skip membership creation",
+          updatedTx.id,
+        );
         return;
       }
 
       // Kalau membership sudah terhubung → jangan buat lagi (idempotent)
       if (updatedTx.membershipId) {
-        console.log('Membership already linked to transaction', updatedTx.id);
+        console.log("Membership already linked to transaction", updatedTx.id);
         return;
       }
 
       // Ambil package berdasarkan metadata.packageId
       const packageId = metadata?.packageId;
       if (!packageId) {
-        console.error('No packageId in metadata for transaction', updatedTx.id);
+        console.error("No packageId in metadata for transaction", updatedTx.id);
         return;
       }
 
@@ -236,7 +235,7 @@ class MembershipTransactionService {
       });
 
       if (!membershipPackage) {
-        console.error('membershipPackage not found for id', packageId);
+        console.error("membershipPackage not found for id", packageId);
         return;
       }
 
@@ -247,36 +246,39 @@ class MembershipTransactionService {
           gymId: updatedTx.gymId,
           // optional: status in ['AKTIF','EXPIRED'] jika ada
         },
-        orderBy: { endDate: 'desc' },
+        orderBy: { endDate: "desc" },
       });
-      
+
       // Hitung start & end date membership
       const now = new Date();
-      const baseDate = existingMembership && existingMembership.endDate > now ? existingMembership.endDate : now;
+      const baseDate =
+        existingMembership && existingMembership.endDate > now
+          ? existingMembership.endDate
+          : now;
       const newEndDate = new Date(baseDate);
       newEndDate.setDate(newEndDate.getDate() + membershipPackage.durationDays);
 
       let membershipRecord;
-      if(existingMembership){
+      if (existingMembership) {
         // update membership
         membershipRecord = await tx.membership.update({
           where: { id: existingMembership.id },
           data: {
             endDate: newEndDate,
-            status: 'AKTIF',
+            status: "AKTIF",
             packageId: membershipPackage.id,
           },
         });
-      }else {
+      } else {
         // Buat Membership baru
         membershipRecord = await tx.membership.create({
           data: {
-            userId: updatedTx.userId, 
+            userId: updatedTx.userId,
             gymId: updatedTx.gymId,
             packageId: membershipPackage.id,
             startDate: now,
             endDate: newEndDate,
-            status: 'AKTIF',
+            status: "AKTIF",
           },
         });
       }
@@ -287,7 +289,23 @@ class MembershipTransactionService {
         data: { membershipId: membershipRecord.id },
       });
 
-      console.log('Membership created & linked to transaction', {
+      // Buat cashflow gym dari transaksi membership yang berhasil
+      await tx.gymCashflow.create({
+        data: {
+          gymId: updatedTx.gymId,
+          name: `Pembayaran Membership - ${membershipPackage.name}`,
+          amount: updatedTx.amount,
+          transactionType: "PENDAPATAN",
+          cashflowType:
+            payment_type === "bank_transfer" || payment_type === "qris"
+              ? "CASHLESS"
+              : "CASHLESS",
+          date: new Date(),
+          note: `Pembayaran membership berhasil. Order ID: ${updatedTx.orderId}`,
+        },
+      });
+
+      console.log("Membership created & linked to transaction", {
         transactionId: updatedTx.id,
         membershipId: membershipRecord.id,
         endDate: membershipRecord.endDate,
@@ -297,24 +315,47 @@ class MembershipTransactionService {
     return true;
   }
 
-    async notificationSnap(data) {
-        const hash = crypto.createHash('sha512').update(`${data.order_id}${data.status_code}${data.gross_amount}${process.env.MIDTRANS_SERVER_KEY}`).digest('hex');
-        console.log("Response Midtrans : ", data);
+  async notificationSnap(data) {
+    const hash = crypto
+      .createHash("sha512")
+      .update(
+        `${data.order_id}${data.status_code}${data.gross_amount}${process.env.MIDTRANS_SERVER_KEY}`,
+      )
+      .digest("hex");
+    console.log("Response Midtrans : ", data);
 
-        if  (data.signature_key !== hash){
-            return true;
-        }
-
-        if (!data.metadata){
-            return true;
-        }
-
-        if (data.metadata.type == 'membership'){
-            return await this.updateTransactionStatus(data);
-        }
-        
-        return true;
+    if (data.signature_key !== hash) {
+      return true;
     }
+
+    if (!data.metadata) {
+      return true;
+    }
+
+    if (data.metadata.type == "membership") {
+      return await this.updateTransactionStatus(data);
+    }
+
+    return true;
+  }
+
+  async getAllTransaction(userId) {
+    const checkMember = await prisma.membership.findFirst({
+      where: {
+        userId: userId,
+      },
+    });
+
+    if (!membershipPackage) {
+      throw BaseError.notFound("membership package not found");
+    }
+
+    return await prisma.transaction.findMany({
+      where: {
+        userId: checkMember.userId,
+      },
+    });
+  }
 }
 
 export default new MembershipTransactionService();
