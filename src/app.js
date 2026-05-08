@@ -20,6 +20,7 @@ import membershipTransactionRoutes from "./domains/transaction/membership-transa
 import attendanceRoute from "./domains/attendance/attendance.route.js";
 import equipmentRoute from "./domains/equipment/equipment.route.js";
 import { startSchedulers } from "./jobs/scheduler.js";
+import cashflowRoutes from "./domains/cashflow/cashflow.routes.js";
 
 class ExpressApplication {
     app;
@@ -97,6 +98,7 @@ class ExpressApplication {
         this.app.use("/api/v1/equipment", equipmentRoute);
         this.app.use("/api/v1/transaction", membershipTransactionRoutes);
         this.app.use("/api/v1/attendance", attendanceRoute);
+        this.app.use("/api/v1/cashflow", cashflowRoutes);
     }
 
     configureAssets() {
