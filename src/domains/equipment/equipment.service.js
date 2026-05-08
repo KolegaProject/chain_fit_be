@@ -187,7 +187,7 @@ class EquipmentService {
         data: {
           equipmentId: equipmentId,
           gymId: gymId,
-          date: new Date(),
+          date: new Date(), 
           type: type,
           description: `Health status changed from ${existingEquipment.healthStatus} to ${updateData.healthStatus}`,
           reportedById: userId,
@@ -337,6 +337,8 @@ class EquipmentService {
     if(!searchEq) throw BaseError.notFound("Equipment not found");
     return searchEq
   }
+
+  // laporin alat rusak 
 }
 
 export default new EquipmentService();
