@@ -10,6 +10,25 @@ class AttendanceService {
                 gymId: gymId,
                 checkOutAt: null,
             },
+            select: {
+                id: true,
+                membershipId: true,
+                gymId: true,
+                checkInAt: true,
+                checkOutAt: true,
+                createdById: true,
+                membership: {
+                    select: {
+                        user: {
+                            select: {
+                                name: true,
+                                id: true,
+                                profileImage: true,
+                            }
+                        }
+                    }
+                }
+            }
         });
 
         return attendance;
