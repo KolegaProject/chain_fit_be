@@ -116,9 +116,13 @@ class GymMembershipService {
 
         await tx.gymCashflow.create({
             data: {
-            name: `Pendaftaran gym - ${paket.name}`,
-            jumlah: paket.price,
-            type: "CASH",
+                name: `Pendaftaran gym - ${paket.name}`,
+                gymId: gym.id,
+                amount: paket.price,
+                transactionType: "PENDAPATAN",
+                cashflowType: "CASHLESS",
+                date: new Date(),
+                note: `Pendaftar gym dengan nama, ${user.name} dan peket ${paket.name}`
             },
         });
 
@@ -169,8 +173,12 @@ class GymMembershipService {
             await tx.gymCashflow.create({
                 data: {
                     name: `Update membership - ${membership.user.name}`,
-                    jumlah: paket.price,
-                    type: "CASH"
+                    gymId: membership.gymId,
+                    amount: paket.price,
+                    transactionType: "PENDAPATAN",
+                    cashflowType: "CASHLESS",
+                    date: new Date(),
+                    note: `Update membership untuk pengguna ${membership.user.name} dengan paket ${paket.name}`
                 }
             });
 
