@@ -1,5 +1,5 @@
-import BaseError from "../../base_classes/base-error.js";
-import prisma from "../../config/db.js";
+import BaseError from "../../../base_classes/base-error.js";
+import prisma from "../../../config/db.js";
 
 class CashflowService {
   async create(userId, cashflowData) {
