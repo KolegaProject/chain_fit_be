@@ -20,7 +20,10 @@ process.env.DATABASE_URL_TEST = getTestDatabaseUrl();
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'integration-test-secret';
 process.env.NODE_ENV = 'test';
 
-const TEST_IMAGE_PATH = '/opt/projects/chain_fit_be/tests/helpers/test-gym-image.png';
+const TEST_IMAGE_BUFFER = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9WlH0KQAAAAASUVORK5CYII=',
+  'base64'
+);
 const uploadedObjectKeys = [];
 
 const s3 = new S3Client({
@@ -82,7 +85,10 @@ describe('Gym create HTTP integration', () => {
       .field('facility', JSON.stringify(['Sauna', 'Locker']))
       .field('tag', 'premium-test')
       .field('description', 'Gym created from HTTP integration test')
-      .attach('image', TEST_IMAGE_PATH);
+      .attach('image', TEST_IMAGE_BUFFER, {
+        filename: 'test-gym-image.png',
+        contentType: 'image/png'
+      });
 
     expect(response.status).toBe(201);
     expect(response.body.status).toBe('Created');
