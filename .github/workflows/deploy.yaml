@@ -27,6 +27,7 @@ jobs:
 
   integration_service:
     runs-on: ubuntu-latest
+    environment: Development
     needs: test
 
     services:
@@ -78,6 +79,7 @@ jobs:
 
   integration_http:
     runs-on: ubuntu-latest
+    environment: Development
     needs: integration_service
 
     services:
