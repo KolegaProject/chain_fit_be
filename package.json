@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
+    "test:integration": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js tests/integration",
+    "test:integration:http": "bash -lc \"find tests/integration -type f -name '*http.int.test.js' -print0 | sort -z | xargs -0 node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand\"",
+    "test:integration:service": "bash -lc \"find tests/integration -type f -name '*.int.test.js' ! -name '*http.int.test.js' -print0 | sort -z | xargs -0 node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand\"",
     "start": "node src/server.js",
     "dev": "cross-env NODE_ENV=development && nodemon src/server.js"
   },
@@ -45,6 +48,7 @@
   },
   "devDependencies": {
     "jest": "^30.4.1",
-    "prisma": "^6.16.2"
+    "prisma": "^6.16.2",
+    "supertest": "^7.2.2"
   }
 }
