@@ -161,7 +161,7 @@ describe('GymController', () => {
 
     await GymController.delete(req, res);
 
-    expect(gymService.deleteGym).toHaveBeenCalledWith(22, '9');
+    expect(gymService.deleteGym).toHaveBeenCalledWith(22, 9);
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.jsonPayload).toEqual({
       code: 200,
