@@ -145,7 +145,6 @@ class CashflowService {
         ...(search && {
           name: {
             contains: search,
-            mode: "insensitive",
           },
         }),
       },

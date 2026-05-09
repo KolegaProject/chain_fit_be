@@ -41,7 +41,7 @@ class GymController {
     }
     
     async delete(req, res){
-        const {id} = req.params;
+        const id = parseInt(req.params.id);
         const userId = req.user.id;
         const gym = await gymService.deleteGym(userId, id);
         if(!gym) throw new Error("Failed to delete gym");

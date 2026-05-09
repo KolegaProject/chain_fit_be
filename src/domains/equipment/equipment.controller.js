@@ -56,7 +56,7 @@ class EquipmentController {
         const equipId = Number(req.params.equipId);
         const gymId = Number(req.params.id);
         const userId = req.user.id;
-        const history = await equipmentService.getHistoryEquipment(equipId, gymId, userId);
+        const history = await equipmentService.getEquipmentHistory(equipId, gymId, userId);
         return successResponse(res, history);
     }
 
