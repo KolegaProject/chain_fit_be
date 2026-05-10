@@ -19,6 +19,7 @@ import gymRoute from "./domains/gym/gym.route.js";
 import membershipTransactionRoutes from "./domains/transaction/membership-transaction.routes.js";
 import attendanceRoute from "./domains/attendance/attendance.route.js";
 import equipmentRoute from "./domains/equipment/equipment.route.js";
+import { startSchedulers } from "./jobs/scheduler.js";
 
 class ExpressApplication {
     app;
@@ -116,6 +117,7 @@ class ExpressApplication {
             this.app.listen(this.port, () => {
                 logger.info(`🚀 Server running on port ${this.port}`);
             });
+            startSchedulers();
         } catch (error) {
                 logger.error("❌ Server failed to start:", error);
                 process.exit(1);

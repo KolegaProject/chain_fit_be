@@ -6,7 +6,14 @@ import { changePasswordSchema } from "../auth/auth-schema.js";
 
 // GYM DOMAIN
 import gymController from "./gym.controller.js";
-import { createGymSchema, getGymSchema, gymSchema, queryGymSchema, updateGymSchema, verifiedStatus } from "./gym.schema.js";
+import {
+  createGymSchema,
+  getGymSchema,
+  gymSchema,
+  queryGymSchema,
+  updateGymSchema,
+  verifiedStatus,
+} from "./gym.schema.js";
 
 // PAKET MEMBER DOMAIN
 import {
@@ -25,18 +32,70 @@ import {
 } from "./penjaga/gym-penjaga.schema.js";
 
 // EQUIPMENT DOMAIN
-import { createEquipmentSchema, deleteEquipmentSchema,  getHistoryEquipmentByIdSchema, showEquipmentSchema, updateEquipmentSchema } from "../equipment/equipment.schema.js";
+import {
+  createEquipmentSchema,
+  deleteEquipmentSchema,
+  getHistoryEquipmentByIdSchema,
+  showEquipmentSchema,
+  updateEquipmentSchema,
+} from "../equipment/equipment.schema.js";
 import equipmentController from "../equipment/equipment.controller.js";
 import gymMembershipController from "./membership/gym-membership.controller.js";
+import {
+  createMebershipSchema,
+  deleteMembershipSchema,
+  getMembershipSchema,
+  updateMembershipSchema,
+} from "./membership/gym-membership.schema.js";
+
+// CASHFLOW DOMAIN
+import { cashflowSchema, createCashflowSchema, getAllCashflowSchema, updateCashflowSchema } from "./cashflow/cashflow.schema.js";
+import cashflowController from "./cashflow/cashflow.controller.js";
 
 class GymRoutes extends BaseRoutes {
   routes() {
-
     // membership
     this.router.get("/me/memberships", [
       authTokenMiddleware.authenticate,
       authTokenMiddleware.authorizeUser(["MEMBER"]),
       tryCatch(gymMembershipController.getMembership),
+    ]);
+
+    this.router.get("/:id/memberships", [
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["PENJAGA", "OWNER"]),
+      validateCredentials(gymSchema, "params"),
+      tryCatch(gymMembershipController.index),
+    ]);
+
+    this.router.get("/:id/memberships/:membershipId", [
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["PENJAGA", "OWNER"]),
+      validateCredentials(getMembershipSchema, "params"),
+      tryCatch(gymMembershipController.show),
+    ]);
+
+    this.router.post("/:id/memberships", [
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["PENJAGA", "OWNER"]),
+      validateCredentials(createMebershipSchema),
+      validateCredentials(gymSchema, "params"),
+      tryCatch(gymMembershipController.create),
+    ]);
+
+    this.router.put("/:id/memberships/:membershipId", [
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["PENJAGA", "OWNER"]),
+      validateCredentials(updateMembershipSchema),
+      validateCredentials(deleteMembershipSchema, "params"),
+      tryCatch(gymMembershipController.update),
+    ]);
+
+    this.router.delete("/:id/memberships/:membershipId", [
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["PENJAGA", "OWNER"]),
+      validateCredentials(deleteMembershipSchema, "params"),
+      tryCatch(gymMembershipController.delete),
     ]);
 
     // profile penjaga
@@ -76,8 +135,6 @@ class GymRoutes extends BaseRoutes {
       validateCredentials(createPenjagaSchema),
       tryCatch(gymPenjagaController.createPenjaga),
     ]);
-
-
 
     this.router.get("/:id/gym-staff", [
       authTokenMiddleware.authenticate,
@@ -130,7 +187,7 @@ class GymRoutes extends BaseRoutes {
       authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
       validateCredentials(gymSchema, "params"),
       validateCredentials(createEquipmentSchema),
-      tryCatch(equipmentController.create)
+      tryCatch(equipmentController.create),
     );
 
     this.router.put(
@@ -139,7 +196,7 @@ class GymRoutes extends BaseRoutes {
       authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
       validateCredentials(deleteEquipmentSchema, "params"),
       validateCredentials(updateEquipmentSchema),
-      tryCatch(equipmentController.update)
+      tryCatch(equipmentController.update),
     );
 
     this.router.delete(
@@ -147,7 +204,7 @@ class GymRoutes extends BaseRoutes {
       authTokenMiddleware.authenticate,
       authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
       validateCredentials(deleteEquipmentSchema, "params"),
-      tryCatch(equipmentController.delete)
+      tryCatch(equipmentController.delete),
     );
 
     this.router.get(
@@ -156,15 +213,15 @@ class GymRoutes extends BaseRoutes {
       authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
       validateCredentials(gymSchema, "params"),
       validateCredentials(showEquipmentSchema, "query"),
-      tryCatch(equipmentController.index)
+      tryCatch(equipmentController.index),
     );
-    
+
     this.router.get(
       "/:id/equipment/:equipId",
       authTokenMiddleware.authenticate,
       authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
       validateCredentials(deleteEquipmentSchema, "params"),
-      tryCatch(equipmentController.show)
+      tryCatch(equipmentController.show),
     );
 
     this.router.get(
@@ -172,7 +229,7 @@ class GymRoutes extends BaseRoutes {
       authTokenMiddleware.authenticate,
       authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
       validateCredentials(deleteEquipmentSchema, "params"),
-      tryCatch(equipmentController.getAllHistoryEquipment)
+      tryCatch(equipmentController.getAllHistoryEquipment),
     );
 
     this.router.get(
@@ -180,7 +237,7 @@ class GymRoutes extends BaseRoutes {
       authTokenMiddleware.authenticate,
       authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
       validateCredentials(getHistoryEquipmentByIdSchema, "params"),
-      tryCatch(equipmentController.getHistoryEquipmentById)
+      tryCatch(equipmentController.getHistoryEquipmentById),
     );
 
     // ========== Gym list & create ==========
@@ -195,8 +252,8 @@ class GymRoutes extends BaseRoutes {
       authTokenMiddleware.authorizeUser(["OWNER"]),
       validateCredentials(gymSchema, "params"),
       validateCredentials(updateGymSchema),
-      tryCatch(gymController.update)
-    ])
+      tryCatch(gymController.update),
+    ]);
 
     this.router.get("/", [
       authTokenMiddleware.authenticate,
@@ -214,6 +271,50 @@ class GymRoutes extends BaseRoutes {
     //   tryCatch(gymController.update),
     // ]);
 
+    // cashflow API for gym owner and penjaga
+    this.router.post(
+      "/:id/cashflow",
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
+      validateCredentials(gymSchema, "params"),
+      validateCredentials(createCashflowSchema),
+      tryCatch(cashflowController.create),
+    );
+
+    this.router.put(
+      "/:id/cashflow/:cashflowId",
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
+      validateCredentials(cashflowSchema, "params"),
+      validateCredentials(updateCashflowSchema),
+      tryCatch(cashflowController.update),
+    );
+
+    this.router.delete(
+      "/:id/cashflow/:cashflowId",
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
+      validateCredentials(cashflowSchema, "params"),
+      tryCatch(cashflowController.delete),
+    );
+
+    this.router.get(
+      "/:id/cashflow",
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
+      validateCredentials(gymSchema, "params"),
+      validateCredentials(getAllCashflowSchema, "query"),
+      tryCatch(cashflowController.index),
+    );
+
+    this.router.get(
+      "/:id/cashflow/:cashflowId",
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
+      validateCredentials(cashflowSchema, "params"),
+      tryCatch(cashflowController.show),
+    );
+
     // ========== Detail & delete by id  ==========
     this.router.get("/:id", [
       authTokenMiddleware.authenticate,
@@ -228,9 +329,6 @@ class GymRoutes extends BaseRoutes {
       validateCredentials(gymSchema, "params"),
       tryCatch(gymController.delete),
     ]);
-
-
-
 
     // paket member API
     this.router.post("/:id/paket-member", [

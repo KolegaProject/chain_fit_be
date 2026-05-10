@@ -10,6 +10,25 @@ class AttendanceService {
                 gymId: gymId,
                 checkOutAt: null,
             },
+            select: {
+                id: true,
+                membershipId: true,
+                gymId: true,
+                checkInAt: true,
+                checkOutAt: true,
+                createdById: true,
+                membership: {
+                    select: {
+                        user: {
+                            select: {
+                                name: true,
+                                id: true,
+                                profileImage: true,
+                            }
+                        }
+                    }
+                }
+            }
         });
 
         return attendance;
@@ -98,6 +117,58 @@ class AttendanceService {
         return {message: "Check-in successful", attendance: attendance.membership.user};
     }
 
+    async checkInManual(userId, penjagaId){
+        const activeMembership = await prisma.membership.findFirst({
+            where: {
+                id: userId,
+                status: 'AKTIF',
+                endDate: {
+                    gte: new Date(),
+                },
+            },
+        });
+        if(!activeMembership) throw BaseError.badRequest("User does not have an active membership");
+
+        const penjaga =  await prisma.user.findFirst({
+            where: {
+                id: penjagaId,
+                role: 'PENJAGA',
+                gymId: activeMembership.gymId,
+            },
+        });
+        if(!penjaga) throw BaseError.forbidden("You are not authorized to check in members for this gym");
+        const existingAttendance = await prisma.attendance.findFirst({
+            where: {
+                membershipId: activeMembership.id,
+                gymId: activeMembership.gymId,
+                checkOutAt: null,
+            },
+        });
+        if(existingAttendance) throw BaseError.badRequest("User already checked in");
+        const attendance = await prisma.attendance.create({
+            data: {
+                gymId: activeMembership.gymId,
+                membershipId: activeMembership.id,
+                checkInAt: new Date(),
+                createdById: penjaga.id,
+            },
+            select: {
+                membership: {
+                    select: {
+                        user: {
+                            select: {
+                                id: true,
+                                name: true,
+                                email: true,
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        return {message: "Check-in successful", attendance: attendance.membership.user};
+    }
+
     // ga perlu login penjaga untuk check out
     async checkOut(memberId){
         
@@ -140,6 +211,23 @@ class AttendanceService {
                 gymId: gymId,
                 
             },
+            select: {
+                id: true,
+                membership: {
+                    select: {
+                        user: {
+                            select: {
+                                name: true,
+                                email: true
+                            }
+                        }
+                    }
+                },
+                checkInAt: true,
+                checkOutAt: true,
+                createdBy: true
+            }
+            
         });
         return attendance;
     }

@@ -1,3 +1,4 @@
 .env
 /src/generated/prisma
 node_modules
+tests/helpers/test-gym-image.png

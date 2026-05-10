@@ -20,10 +20,15 @@ const createEquipmentSchema = Joi.object({
         "string.uri": "Video URL must be a valid URI.",
         "string.base": "Video URL must be a string."
     }),
-    jumlah: Joi.number().min(1).required().messages({
-        "number.empty": "Jumlah alat is required",
-        "number.min": "Jumlah alat gym must be number at least 1",
-        "string.base": "Jumlah alat must be int"
+    jum: Joi.string().min(1).required().messages({
+        "string.empty": "Jumlah alat is required",
+        "string.min": "Jumlah alat gym must be number at least 1",
+        "string.base": "Jumlah alat must be string"
+    }),
+    description: Joi.string().required()
+        .messages({
+            "string.empty": "Description is required.",
+            "string.base": "Gym name can only contain letters and spaces."
     }),
 })
 
@@ -46,6 +51,11 @@ const updateEquipmentSchema = Joi.object({
         "number.empty": "Jumlah alat is required",
         "number.min": "Jumlah alat gym must be number at least 1",
         "string.base": "Jumlah alat must be string"
+    }),
+    description: Joi.string().optional()
+        .messages({
+            "string.empty": "Description is required.",
+            "string.base": "Gym name can only contain letters and spaces."
     }),
 });
 
@@ -97,8 +107,7 @@ const getUserEquipmentSchema = Joi.object({
     search: Joi.string().optional().messages({
         "string.base": "Search must be a string."
     }),
-    filter: Joi.number().min(1).required().messages({
-        "number.empty": "Id equipment is required",
+    filter: Joi.number().min(1).optional().messages({
         "number.min": "Id equipment must be number at least 1",
         "number.base": "Id equipment must be int"
     }),

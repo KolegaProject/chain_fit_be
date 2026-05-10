@@ -1,0 +1,300 @@
+import { afterAll, beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals';
+import crypto from 'crypto';
+
+jest.unstable_mockModule('../../src/config/midtrans.js', () => ({
+  snap: {
+    createTransaction: jest.fn(async (parameter) => ({
+      token: `snap-token-${parameter.transaction_details.order_id}`,
+      redirect_url: `https://midtrans.test/pay/${parameter.transaction_details.order_id}`
+    }))
+  }
+}));
+
+const { snap } = await import('../../src/config/midtrans.js');
+const { createRequest } = await import('../helpers/request-test-helper.js');
+const {
+  cleanupDatabase,
+  connectTestDatabase,
+  disconnectTestDatabase,
+  getTestDatabaseUrl,
+  resetTestDatabase,
+  testPrisma
+} = await import('../helpers/db-test-helper.js');
+const {
+  createAuthenticatedMember,
+  createAuthenticatedOwner,
+  createAuthHeaderForUser
+} = await import('../helpers/auth-test-helper.js');
+const {
+  createGym,
+  createMembership,
+  createMembershipPackage,
+  createTransaction
+} = await import('../helpers/seed-factory.js');
+
+process.env.DATABASE_URL = getTestDatabaseUrl();
+process.env.DATABASE_URL_TEST = getTestDatabaseUrl();
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'integration-test-secret';
+process.env.MIDTRANS_SERVER_KEY = process.env.MIDTRANS_SERVER_KEY || 'midtrans-server-key-test';
+process.env.NODE_ENV = 'test';
+
+jest.setTimeout(30000);
+
+function createMidtransSignature(orderId, statusCode, grossAmount) {
+  return crypto
+    .createHash('sha512')
+    .update(`${orderId}${statusCode}${grossAmount}${process.env.MIDTRANS_SERVER_KEY}`)
+    .digest('hex');
+}
+
+describe('Transaction HTTP integration', () => {
+  beforeAll(async () => {
+    await connectTestDatabase();
+  });
+
+  afterAll(async () => {
+    await cleanupDatabase();
+    await disconnectTestDatabase();
+  });
+
+  beforeEach(async () => {
+    await resetTestDatabase();
+    jest.clearAllMocks();
+  });
+
+  test('POST /api/v1/transaction/create-snap should create pending transaction and return snap data', async () => {
+    const { user: owner } = await createAuthenticatedOwner({ password: 'Password123!' });
+    const { user: member } = await createAuthenticatedMember({ password: 'Password123!' });
+    const gym = await createGym(owner.id, { name: 'Snap Gym', verified: 'APPROVED' });
+    const membershipPackage = await createMembershipPackage(gym.id, {
+      name: 'Snap Package',
+      price: '100000.00',
+      durationDays: 30
+    });
+
+    const request = await createRequest();
+    const response = await request
+      .post('/api/v1/transaction/create-snap')
+      .set('Authorization', createAuthHeaderForUser(member))
+      .send({
+        packageId: membershipPackage.id,
+        gymId: gym.id
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body.status).toBe('Created');
+    expect(response.body.data).toHaveProperty('token');
+    expect(response.body.data).toHaveProperty('redirectUrl');
+    expect(response.body.data).toHaveProperty('transactionId');
+    expect(response.body.data).toHaveProperty('orderId');
+    expect(response.body.data.grossAmount).toBe(102000);
+    expect(snap.createTransaction).toHaveBeenCalledTimes(1);
+
+    const createdTransaction = await testPrisma.transaction.findUnique({
+      where: { id: response.body.data.transactionId }
+    });
+    expect(createdTransaction).not.toBeNull();
+    expect(createdTransaction.userId).toBe(member.id);
+    expect(createdTransaction.gymId).toBe(gym.id);
+    expect(createdTransaction.status).toBe('PENDING');
+    expect(createdTransaction.orderId).toBe(response.body.data.orderId);
+  });
+
+  test('POST /api/v1/transaction/create-snap should reject member with still-active membership', async () => {
+    const { user: owner } = await createAuthenticatedOwner({ password: 'Password123!' });
+    const { user: member } = await createAuthenticatedMember({ password: 'Password123!' });
+    const gym = await createGym(owner.id, { name: 'Active Membership Snap Gym', verified: 'APPROVED' });
+    const membershipPackage = await createMembershipPackage(gym.id, {
+      name: 'Protected Package',
+      price: '100000.00',
+      durationDays: 30
+    });
+    await createMembership(member.id, gym.id, membershipPackage.id, { status: 'AKTIF' });
+
+    const request = await createRequest();
+    const response = await request
+      .post('/api/v1/transaction/create-snap')
+      .set('Authorization', createAuthHeaderForUser(member))
+      .send({
+        packageId: membershipPackage.id,
+        gymId: gym.id
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.status).toBe('Bad Request');
+    expect(response.body.errors.message).toBe('user already has an active membership');
+    expect(snap.createTransaction).not.toHaveBeenCalled();
+  });
+
+  test('POST /api/v1/transaction/webhook-midtrans should settle payment and create membership + cashflow', async () => {
+    const { user: owner } = await createAuthenticatedOwner({ password: 'Password123!' });
+    const { user: member } = await createAuthenticatedMember({ password: 'Password123!' });
+    const gym = await createGym(owner.id, { name: 'Webhook Gym', verified: 'APPROVED' });
+    const membershipPackage = await createMembershipPackage(gym.id, {
+      name: 'Webhook Package',
+      price: '100000.00',
+      durationDays: 30
+    });
+    const transaction = await createTransaction({
+      gymId: gym.id,
+      userId: member.id,
+      amount: '102000.00',
+      orderId: 'ORDER-WEBHOOK-1',
+      status: 'PENDING',
+      paymentMethod: null
+    });
+
+    const payload = {
+      order_id: transaction.orderId,
+      status_code: '200',
+      gross_amount: '102000.00',
+      signature_key: createMidtransSignature(transaction.orderId, '200', '102000.00'),
+      transaction_status: 'settlement',
+      payment_type: 'qris',
+      fraud_status: 'accept',
+      metadata: {
+        type: 'membership',
+        packageId: membershipPackage.id,
+        gymId: gym.id,
+        userId: member.id,
+        transactionId: transaction.id
+      }
+    };
+
+    const request = await createRequest();
+    const response = await request
+      .post('/api/v1/transaction/webhook-midtrans')
+      .send(payload);
+
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe('OK');
+    expect(response.body.data).toBe(true);
+
+    const updatedTransaction = await testPrisma.transaction.findUnique({ where: { id: transaction.id } });
+    expect(updatedTransaction.status).toBe('PAID');
+    expect(updatedTransaction.paymentMethod).toBe('qris');
+    expect(updatedTransaction.membershipId).not.toBeNull();
+
+    const createdMembership = await testPrisma.membership.findUnique({ where: { id: updatedTransaction.membershipId } });
+    expect(createdMembership).not.toBeNull();
+    expect(createdMembership.userId).toBe(member.id);
+    expect(createdMembership.gymId).toBe(gym.id);
+    expect(createdMembership.packageId).toBe(membershipPackage.id);
+
+    const createdCashflow = await testPrisma.gymCashflow.findFirst({
+      where: {
+        gymId: gym.id,
+        name: `Pembayaran Membership - ${membershipPackage.name}`
+      }
+    });
+    expect(createdCashflow).not.toBeNull();
+  });
+
+  test('POST /api/v1/transaction/webhook-midtrans should be idempotent for duplicate settlement webhook', async () => {
+    const { user: owner } = await createAuthenticatedOwner({ password: 'Password123!' });
+    const { user: member } = await createAuthenticatedMember({ password: 'Password123!' });
+    const gym = await createGym(owner.id, { name: 'Idempotent Gym', verified: 'APPROVED' });
+    const membershipPackage = await createMembershipPackage(gym.id, {
+      name: 'Idempotent Package',
+      price: '150000.00',
+      durationDays: 30
+    });
+    const transaction = await createTransaction({
+      gymId: gym.id,
+      userId: member.id,
+      amount: '152000.00',
+      orderId: 'ORDER-IDEMPOTENT-1',
+      status: 'PENDING',
+      paymentMethod: null
+    });
+
+    const payload = {
+      order_id: transaction.orderId,
+      status_code: '200',
+      gross_amount: '152000.00',
+      signature_key: createMidtransSignature(transaction.orderId, '200', '152000.00'),
+      transaction_status: 'settlement',
+      payment_type: 'bank_transfer',
+      fraud_status: 'accept',
+      metadata: {
+        type: 'membership',
+        packageId: membershipPackage.id,
+        gymId: gym.id,
+        userId: member.id,
+        transactionId: transaction.id
+      }
+    };
+
+    const request = await createRequest();
+    const firstResponse = await request.post('/api/v1/transaction/webhook-midtrans').send(payload);
+    const secondResponse = await request.post('/api/v1/transaction/webhook-midtrans').send(payload);
+
+    expect(firstResponse.status).toBe(200);
+    expect(secondResponse.status).toBe(200);
+
+    const memberships = await testPrisma.membership.findMany({
+      where: { userId: member.id, gymId: gym.id }
+    });
+    const cashflows = await testPrisma.gymCashflow.findMany({
+      where: {
+        gymId: gym.id,
+        name: `Pembayaran Membership - ${membershipPackage.name}`
+      }
+    });
+
+    expect(memberships).toHaveLength(1);
+    expect(cashflows).toHaveLength(1);
+  });
+
+  test('POST /api/v1/transaction/webhook-midtrans should ignore invalid signature and keep transaction pending', async () => {
+    const { user: owner } = await createAuthenticatedOwner({ password: 'Password123!' });
+    const { user: member } = await createAuthenticatedMember({ password: 'Password123!' });
+    const gym = await createGym(owner.id, { name: 'Invalid Signature Gym', verified: 'APPROVED' });
+    const membershipPackage = await createMembershipPackage(gym.id, {
+      name: 'Invalid Signature Package',
+      price: '100000.00',
+      durationDays: 30
+    });
+    const transaction = await createTransaction({
+      gymId: gym.id,
+      userId: member.id,
+      amount: '102000.00',
+      orderId: 'ORDER-INVALID-SIGNATURE',
+      status: 'PENDING',
+      paymentMethod: null
+    });
+
+    const payload = {
+      order_id: transaction.orderId,
+      status_code: '200',
+      gross_amount: '102000.00',
+      signature_key: 'invalid-signature',
+      transaction_status: 'settlement',
+      payment_type: 'qris',
+      fraud_status: 'accept',
+      metadata: {
+        type: 'membership',
+        packageId: membershipPackage.id,
+        gymId: gym.id,
+        userId: member.id,
+        transactionId: transaction.id
+      }
+    };
+
+    const request = await createRequest();
+    const response = await request
+      .post('/api/v1/transaction/webhook-midtrans')
+      .send(payload);
+
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe('OK');
+    expect(response.body.data).toBe(true);
+
+    const unchangedTransaction = await testPrisma.transaction.findUnique({ where: { id: transaction.id } });
+    expect(unchangedTransaction.status).toBe('PENDING');
+    expect(unchangedTransaction.membershipId).toBeNull();
+
+    const memberships = await testPrisma.membership.findMany({ where: { userId: member.id, gymId: gym.id } });
+    expect(memberships).toHaveLength(0);
+  });
+});

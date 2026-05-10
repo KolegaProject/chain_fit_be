@@ -25,13 +25,14 @@ class GymService {
                     jamOperasional: data.jamOperasional,
                     address: data.address,
                     facility: data.fac,
-                    tag: data.tag
+                    tag: data.tag,
+                    description: data.description
                 }
             });
 
             const gymUrlPath = `image-profile/${gym.ownerId}/${gym.id}`;
             const uploadedImageUrls = await uploadFile(gymUrlPath, img);
-
+            
             if (!uploadedImageUrls || !uploadedImageUrls.length) {
                 throw new Error("failed to upload image");
             }
@@ -118,6 +119,7 @@ class GymService {
                 latitude: true,
                 longitude: true,
                 facility: true,
+                description: true,
                 gymImage: {
                     select: {
                         id: true,
@@ -346,6 +348,8 @@ class GymService {
         if(!penjaga) throw BaseError.notFound("Penjaga not found")
             return penjaga
     }
+
+    // perpanjang member manual
 
 }
 

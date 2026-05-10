@@ -104,6 +104,32 @@ class AuthService {
         return { access_token: accessToken, refresh_token: refreshToken };
     }
 
+    // Login via Google / Facebook
+    async loginWithSocialAccount(provider, username) {
+        const allowedProviders = ["google", "facebook"];
+
+        // if (!username) {
+        //     throw BaseError.badRequest("Username is required");
+        // }
+
+        if (!allowedProviders.includes(provider)) {
+            throw BaseError.badRequest("Unsupported provider.");
+        }
+
+        const user = await prisma.user.findFirst({
+            where: {
+                username: username
+            }
+        });
+        if (!user) {
+            throw BaseError.badRequest("Invalid credentials"); // atau notFound bila ingin 404
+        }
+
+        const accessToken = generateToken({ id: user.id, account_type: user.role }, "1d");
+        const refreshToken = generateToken(user.id, "365d");
+
+        return { access_token: accessToken, refresh_token: refreshToken};
+    }
 
     /**
      * Register User
@@ -171,9 +197,11 @@ class AuthService {
         const u = await prisma.user.findUnique({
         where: { id: id },
         select: {
-            id: true, username: true, email: true, role: true, profileImage: true,
+            id: true, username: true, email: true, role: true, profileImage: true, name: true,
             gym: { select: { id: true, name: true } },          // untuk staff
-            gymsOwned: { select: { id: true, name: true } },    // untuk owner
+            gymsOwned: { where: {
+                verified: "APPROVED"
+            },select: { id: true, name: true } },    // untuk owner
             memberships: {                                      // opsional untuk member
             where: { status: "AKTIF", endDate: { gte: new Date() } },
             select: { gym: { select: { id: true, name: true } } }
@@ -188,7 +216,7 @@ class AuthService {
 
         const defaultGymId = gyms[0]?.id ?? null;
 
-        return { user: { id:u.id, username:u.username, email:u.email, role:u.role, profileImage:u.profileImage }, gyms, defaultGymId };
+        return { user: { id:u.id, username:u.username, email:u.email, role:u.role, profileImage:u.profileImage, name: u.name }, gyms, defaultGymId };
     }
 
     /**
@@ -210,17 +238,17 @@ class AuthService {
         if (!user) {
             throw BaseError.notFound("User not found");
         }
-        if(data.email){
-            const emailExist = await prisma.user.findUnique({
+        if(data.username){
+            const usernameExist = await prisma.user.findUnique({
                 where: {
-                    email: data.email
+                    username: data.username
                 }
             });
-            if (emailExist) {
-                let validation = "Email already taken.";
+            if (usernameExist && usernameExist.id != user.id) {
+                let validation = "Username already taken.";
                 let message = {
-                        message: "Email already taken.",
-                        path: ["email"]
+                        message: "Username already taken.",
+                        path: ["username"]
                 };
                 throw new joi.ValidationError(validation, message);
             }
@@ -244,7 +272,7 @@ class AuthService {
             data: data,
             select: {
                 id: true,
-                username: true,
+                email: true,
                 name: true
             }
         });

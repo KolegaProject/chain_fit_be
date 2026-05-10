@@ -13,6 +13,16 @@ const loginSchema = Joi.object({
     }),
 });
 
+const socialLoginSchema = Joi.object({
+    provider: Joi.string()
+        .valid("google", "facebook"),
+    username: Joi.string()
+        .required()
+        .messages({
+        "string.empty": "Username is required."
+    })
+});
+
 const registerSchema = Joi.object({
     name: Joi.string().required().min(4)
         .messages({
@@ -112,4 +122,4 @@ const emailResetPasswordSchema = Joi.object({
 });
 
 
-export { loginSchema, registerSchema, profileSchema, changePasswordSchema, refreshTokenSchema, resetPasswordSchema, emailResetPasswordSchema };
+export { loginSchema, socialLoginSchema, registerSchema, profileSchema, changePasswordSchema, refreshTokenSchema, resetPasswordSchema, emailResetPasswordSchema };

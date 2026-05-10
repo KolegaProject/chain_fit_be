@@ -18,6 +18,17 @@ class AuthController {
         return successResponse(res, response);
     }
 
+    async loginWithSocialAccount(req, res) {
+        const {username, provider} = req.body;
+
+        const response = await AuthService.loginWithSocialAccount(provider, username);
+        if(!response) {
+            throw Error("Failed to login with social account");
+        }
+
+        return successResponse(res, response);
+    }
+
     /**
      * @route POST /auth/register-owner
      * @desc Register owner
@@ -71,13 +82,13 @@ class AuthController {
      * @desc Update user profile
      */
     async updateProfile(req, res){
-        const { email, name } = req.body;
+        const { username, name } = req.body;
         let imageProfile = null;
         if(req.files){
             imageProfile = req.files.image;
 
         }
-        const user = await AuthService.updateProfile(req.user.id, { name, email }, imageProfile);
+        const user = await AuthService.updateProfile(req.user.id, { name, username }, imageProfile);
 
         if (!user) {
             throw Error("Failed to update user profile");

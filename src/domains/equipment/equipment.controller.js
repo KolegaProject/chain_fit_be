@@ -7,8 +7,9 @@ class EquipmentController {
         const gymId =  Number(req.params.id);
         const userId = req.user.id;
         const imageUrl = req.files?.image;
-        const {name, videoURL, jumlah} = req.body;
-        const equipment = await equipmentService.createEquipment(gymId, userId, {name, videoURL, jumlah}, imageUrl)
+        const {name, videoURL, jum, description} = req.body;
+        const jumlah = Number(jum);
+        const equipment = await equipmentService.createEquipment(gymId, userId, {name, videoURL, jumlah, description}, imageUrl)
 
         if(!equipment) throw new Error("Failed to create equipment");
         return successResponse(res, equipment);
@@ -16,11 +17,11 @@ class EquipmentController {
 
     async update(req, res){
         const equipId = Number(req.params.equipId);
-        const {name, healthStatus, videoURL, jumlah: jmlRow} = req.body;
+        const {name, healthStatus, videoURL, jumlah: jmlRow, description} = req.body;
         const gymId = Number(req.params.id);
         const userId = req.user.id;
         const imageUrl = req.files?.image;
-        const equipment = await equipmentService.updateEquipment(equipId, gymId, userId, {name, healthStatus, videoURL,  jumlah: jmlRow == null? undefined: Number(jmlRow)}, imageUrl);
+        const equipment = await equipmentService.updateEquipment(equipId, gymId, userId, {name, healthStatus, videoURL,  jumlah: jmlRow == null? undefined: Number(jmlRow), description}, imageUrl);
         if(!equipment) throw new Error("Failed to update equipment");
         return successResponse(res, equipment);
     }
@@ -55,7 +56,7 @@ class EquipmentController {
         const equipId = Number(req.params.equipId);
         const gymId = Number(req.params.id);
         const userId = req.user.id;
-        const history = await equipmentService.getHistoryEquipment(equipId, gymId, userId);
+        const history = await equipmentService.getEquipmentHistory(equipId, gymId, userId);
         return successResponse(res, history);
     }
 
