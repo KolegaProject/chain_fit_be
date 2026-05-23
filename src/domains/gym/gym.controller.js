@@ -56,9 +56,14 @@ class GymController {
     
     async show(req, res){
         const id = parseInt(req.params.id);
-        // gym detail + dashboard data untuk FE
         const gym = await gymService.getGymById(id);
         return successResponse(res, gym);
+    }
+
+    async dashboardOverview(req, res){
+        const id = parseInt(req.params.id);
+        const dashboard = await gymService.getGymDashboardOverview(id);
+        return successResponse(res, dashboard);
     }
 
 

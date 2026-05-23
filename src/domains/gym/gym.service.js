@@ -148,6 +148,29 @@ class GymService {
             }
         })
         if(!gym) throw BaseError.notFound("gym not found");
+        return gym;
+    }
+
+    async getGymDashboardOverview(id){
+        const gym = await prisma.gym.findFirst({
+            where: {
+                id,
+                verified: "APPROVED"
+            },
+            select: {
+                id: true,
+                name: true,
+                address: true,
+                jamOperasional: true,
+                gymImage: {
+                    select: {
+                        id: true,
+                        url: true
+                    }
+                }
+            }
+        })
+        if(!gym) throw BaseError.notFound("gym not found");
 
         const now = new Date();
         const startOfToday = new Date(now);
@@ -276,7 +299,8 @@ class GymService {
             }
         }
 
-        const dashboard = {
+        return {
+            ...gym,
             summary: {
                 totalMember,
                 activeStaff,
@@ -303,11 +327,6 @@ class GymService {
                 totalExpense,
                 netBalance: totalIncome - totalExpense,
             },
-        };
-
-        return {
-            ...gym,
-            dashboard,
         };
     }
     
