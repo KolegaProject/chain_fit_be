@@ -62,7 +62,8 @@ class GymController {
 
     async dashboardOverview(req, res){
         const id = parseInt(req.params.id);
-        const dashboard = await gymService.getGymDashboardOverview(id);
+        const userId = req.user.id;
+        const dashboard = await gymService.getGymDashboardOverview(id, userId);
         return successResponse(res, dashboard);
     }
 

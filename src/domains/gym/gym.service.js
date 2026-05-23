@@ -151,11 +151,12 @@ class GymService {
         return gym;
     }
 
-    async getGymDashboardOverview(id){
+    async getGymDashboardOverview(id, userId){
         const gym = await prisma.gym.findFirst({
             where: {
                 id,
-                verified: "APPROVED"
+                verified: "APPROVED",
+                ownerId: userId
             },
             select: {
                 id: true,
