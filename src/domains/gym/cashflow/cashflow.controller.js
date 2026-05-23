@@ -83,7 +83,7 @@ class CashflowController {
   }
 
   async trendOverview(req, res) {
-    const userId = req.user.id;
+    const userId = req.user.id; 
     const gymId = Number(req.params.id);
     const year = req.query.year ? Number(req.query.year) : new Date().getUTCFullYear();
 
