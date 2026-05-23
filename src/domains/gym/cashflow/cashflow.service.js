@@ -1,6 +1,8 @@
 import BaseError from "../../../base_classes/base-error.js";
 import prisma from "../../../config/db.js";
 
+const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+
 class CashflowService {
   async create(userId, cashflowData) {
     const user = await prisma.user.findUnique({
@@ -185,6 +187,101 @@ class CashflowService {
         },
       },
     });
+  }
+
+  async getTrendOverview(userId, gymId, year) {
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+    if (!user) throw BaseError.notFound("User not found");
+
+    const gym = await prisma.gym.findFirst({
+      where: {
+        id: gymId,
+        OR: [
+          {
+            ownerId: user.id,
+          },
+          {
+            staff: {
+              some: {
+                id: user.id,
+              },
+            },
+          },
+        ],
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!gym) throw BaseError.notFound("Gym not found");
+
+    const targetYear = Number.isInteger(year) ? year : new Date().getUTCFullYear();
+    const startDate = new Date(Date.UTC(targetYear, 0, 1, 0, 0, 0, 0));
+    const endDate = new Date(Date.UTC(targetYear + 1, 0, 1, 0, 0, 0, 0));
+
+    const cashflows = await prisma.gymCashflow.findMany({
+      where: {
+        gymId,
+        isDeleted: false,
+        date: {
+          gte: startDate,
+          lt: endDate,
+        },
+      },
+      select: {
+        amount: true,
+        transactionType: true,
+        date: true,
+      },
+      orderBy: {
+        date: "asc",
+      },
+    });
+
+    const incomeSeries = MONTH_LABELS.map((month, index) => ({
+      month,
+      monthNumber: index + 1,
+      total: 0,
+    }));
+
+    const expenseSeries = MONTH_LABELS.map((month, index) => ({
+      month,
+      monthNumber: index + 1,
+      total: 0,
+    }));
+
+    for (const item of cashflows) {
+      const monthIndex = new Date(item.date).getUTCMonth();
+      const amount = Number(item.amount);
+
+      if (item.transactionType === "PENDAPATAN") {
+        incomeSeries[monthIndex].total += amount;
+      }
+
+      if (item.transactionType === "PENGELUARAN") {
+        expenseSeries[monthIndex].total += amount;
+      }
+    }
+
+    const totalIncome = incomeSeries.reduce((sum, item) => sum + item.total, 0);
+    const totalExpense = expenseSeries.reduce((sum, item) => sum + item.total, 0);
+
+    return {
+      year: targetYear,
+      gymId,
+      summary: {
+        totalIncome,
+        totalExpense,
+        netBalance: totalIncome - totalExpense,
+      },
+      incomeTrend: incomeSeries,
+      expenseTrend: expenseSeries,
+    };
   }
 }
 
