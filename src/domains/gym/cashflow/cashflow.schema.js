@@ -107,11 +107,12 @@ const updateCashflowSchema = Joi.object({
 });
 
 const trendOverviewCashflowSchema = Joi.object({
-  year: Joi.number().min(2000).max(new Date().getUTCFullYear()).optional().messages({
-    "number.min": "year must be a number between 2000 and " + new Date().getUTCFullYear(),
-    "number.max": "year must be a number between 2000 and " + new Date().getUTCFullYear(),
-    "any.required": "year is required",
-  }),
+  year: Joi.string()
+    .pattern(/^\d{4}$/)
+    .optional()
+    .messages({
+      "string.pattern.base": "year must be a 4 digit number"
+    }),
 });
 
 export {

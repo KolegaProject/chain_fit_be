@@ -307,14 +307,14 @@ class GymRoutes extends BaseRoutes {
       tryCatch(cashflowController.index),
     );
 
-    // this.router.get(
-    //   "/:id/cashflow/overview",
-    //   authTokenMiddleware.authenticate,
-    //   authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
-    //   validateCredentials(gymSchema, "params"),
-    //   validateCredentials(trendOverviewCashflowSchema, "query"),
-    //   tryCatch(cashflowController.trendOverview),
-    // );
+    this.router.get(
+      "/:id/cashflow/overview",
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
+      validateCredentials(gymSchema, "params"),
+      validateCredentials(trendOverviewCashflowSchema, "query"),
+      tryCatch(cashflowController.trendOverview),
+    );
 
     this.router.get(
       "/:id/cashflow/:cashflowId",
