@@ -346,7 +346,7 @@ class MembershipTransactionService {
       },
     });
 
-    if (!membershipPackage) {
+    if (!checkMember) {
       throw BaseError.notFound("membership package not found");
     }
 
