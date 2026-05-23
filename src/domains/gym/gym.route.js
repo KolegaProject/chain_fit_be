@@ -255,12 +255,20 @@ class GymRoutes extends BaseRoutes {
       tryCatch(gymController.update),
     ]);
 
+    this.router.get("/:id/dashboard-overview", [
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["OWNER"]),
+      validateCredentials(gymSchema, "params"),
+      tryCatch(gymController.dashboardOverview),
+    ]);
+
     this.router.get("/", [
       authTokenMiddleware.authenticate,
       authTokenMiddleware.authorizeUser(["OWNER", "MEMBER", "PENJAGA"]),
       validateCredentials(queryGymSchema, "query"),
       tryCatch(gymController.index),
     ]);
+
 
     // ========== Update gym (saran) ==========
     // this.router.patch("/:id", [
