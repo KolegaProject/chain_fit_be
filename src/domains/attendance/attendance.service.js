@@ -50,7 +50,7 @@ class AttendanceService {
         });
         if(!member) throw BaseError.notFound("Attendance not found");
 
-        const token = generateToken(member.id, '15m');
+        const token = generateToken(member.id, '7d');
 
         return {token, memberId: `GYM${gymId}-MEMBERSHIP${member.id}`};
     }
