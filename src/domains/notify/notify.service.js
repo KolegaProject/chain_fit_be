@@ -1,6 +1,7 @@
 import BaseError from "../../base_classes/base-error.js";
 import prisma from "../../config/db.js";
 import { getIo } from "../../config/socket.js";
+import firebaseAdmin from "../../config/firebase.js";
 
 
 function normalizeData(data = {}) {
