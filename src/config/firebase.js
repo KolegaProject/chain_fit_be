@@ -15,7 +15,7 @@ function getFirebaseServiceAccount() {
 const serviceAccount = getFirebaseServiceAccount();
 
 if (!admin.apps.length) {
-  admin.initializeApp({
+    admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
 }
