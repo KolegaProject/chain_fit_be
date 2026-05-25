@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3000;
 // if (process.env.IS_NETLIFY !== "true") {
 // }
 const app = new ExpressApplication(PORT);
-const server = app.start();
+const server = await app.start();
 
 process.on("SIGTERM", () => {
   logger.warn("SIGTERM RECEIVED!");
