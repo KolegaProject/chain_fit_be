@@ -132,6 +132,7 @@ class ExpressApplication {
             });
             startSchedulers();
             
+            return server;
         } catch (error) {
             logger.error("❌ Server failed to start:", error);
             process.exit(1);
