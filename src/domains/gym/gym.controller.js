@@ -78,6 +78,15 @@ class GymController {
         
         return successResponse(res, response);
     }
+
+    async gymList(req, res) {
+
+        const response = await gymService.getListGym();
+        if (!response) {
+            throw new Error("Failed to get list gym");
+        }
+        return successResponse(res, response);
+    }
     
     async showGymNotVerified(req, res){
         const id = parseInt(req.params.id);

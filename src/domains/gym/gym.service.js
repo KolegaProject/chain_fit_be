@@ -9,14 +9,14 @@ const DAY_LABELS = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 class GymService {
 
 
-    async createGym(data, img=[]){
-        if(!img){
+    async createGym(data, img = []) {
+        if (!img) {
             throw new Error("Please upload image");
         }
-        
+
 
         return await prisma.$transaction(async (tx) => {
-            const gym = await tx.gym.create({ 
+            const gym = await tx.gym.create({
                 data: {
                     ownerId: data.ownerId,
                     name: data.namaGym,
@@ -33,7 +33,7 @@ class GymService {
 
             const gymUrlPath = `image-profile/${gym.ownerId}/${gym.id}`;
             const uploadedImageUrls = await uploadFile(gymUrlPath, img);
-            
+
             if (!uploadedImageUrls || !uploadedImageUrls.length) {
                 throw new Error("failed to upload image");
             }
@@ -41,7 +41,7 @@ class GymService {
             const gymImagesData = uploadedImageUrls.map((url) => ({
                 gymId: gym.id,
                 url,
-            })); 
+            }));
 
             await tx.gymImage.createMany({
                 data: gymImagesData,
@@ -51,36 +51,36 @@ class GymService {
         });
     }
 
-    async deleteGym(userId, id){
+    async deleteGym(userId, id) {
         const checkGym = await prisma.gym.findFirst({
             where: {
                 id: id,
                 ownerId: userId
             }
         })
-        if(!checkGym) throw BaseError.notFound("Gym not found");
-        
+        if (!checkGym) throw BaseError.notFound("Gym not found");
+
         const gym = await prisma.gym.delete({
             where: {
                 id: checkGym.id
             }
         })
-        if(!gym) throw new Error("Gym not deleted")
+        if (!gym) throw new Error("Gym not deleted")
 
         return "succesfully delete gym"
     }
 
     // nanti dulu bingung
-    async updateGym(data, userId, id){
+    async updateGym(data, userId, id) {
         console.log(data);
-        
+
         const checkGym = await prisma.gym.findFirst({
             where: {
                 id,
                 ownerId: userId
             }
         });
-        if(!checkGym) throw BaseError.notFound("Gym not found");
+        if (!checkGym) throw BaseError.notFound("Gym not found");
 
         // jangan pake update gambar dulu cuman data aja
         // data = {name, maxCapacity, address, jamOperasional}
@@ -90,15 +90,15 @@ class GymService {
             },
             data: data
         })
-        if(!updateGym) throw new Error("failed to update gym");
+        if (!updateGym) throw new Error("failed to update gym");
         return updateGym;
 
     }
 
 
-    async getAllGym(search){
+    async getAllGym(search) {
         const where = {};
-        if(search){
+        if (search) {
             where.name = {
                 contains: search,
             }
@@ -132,7 +132,7 @@ class GymService {
         return gym;
     }
 
-    async getGymById(id){
+    async getGymById(id) {
         const gym = await prisma.gym.findFirst({
             where: {
                 id,
@@ -147,11 +147,11 @@ class GymService {
                 }
             }
         })
-        if(!gym) throw BaseError.notFound("gym not found");
+        if (!gym) throw BaseError.notFound("gym not found");
         return gym;
     }
 
-    async getGymDashboardOverview(id, userId){
+    async getGymDashboardOverview(id, userId) {
         const gym = await prisma.gym.findFirst({
             where: {
                 id,
@@ -171,7 +171,7 @@ class GymService {
                 }
             }
         })
-        if(!gym) throw BaseError.notFound("gym not found");
+        if (!gym) throw BaseError.notFound("gym not found");
 
         const now = new Date();
         const startOfToday = new Date(now);
@@ -330,8 +330,8 @@ class GymService {
             },
         };
     }
-    
-    async getListGymNotVerifed(){
+
+    async getListGymNotVerifed() {
         const gym = await prisma.gym.findMany({
             where: {
                 verified: "PENDING"
@@ -340,12 +340,19 @@ class GymService {
         return gym;
     }
 
-    async getListGymNotVerifedById(id){
+    async getListGym() {
+        const gym = await prisma.gym.findMany({})
+        return gym;
+    }
+
+    
+
+    async getListGymNotVerifedById(id) {
         const gym = await prisma.gym.findUnique({
             where: {
                 id: id,
-                    verified: "PENDING"
-                
+                verified: "PENDING"
+
             },
             include: {
                 owner: {
@@ -356,22 +363,27 @@ class GymService {
                 }
             }
         })
-        if(!gym) throw BaseError.notFound("gym not found");
+        if (!gym) throw BaseError.notFound("gym not found");
 
         return gym;
     }
 
-    async verifedGym(id, status){
+    async verifedGym(id, status) {
         let verif = "APPROVED"
         let message = "Successfully verified gym"
-        const gym = await prisma.gym.findUnique({
+        const gym = await prisma.gym.findFirst({
             where: {
                 id: id,
-                verified: "PENDING"
+                verified: {
+                    in: ["PENDING", "REJECTED"]
+                }
             },
         })
-        if(!gym) throw BaseError.notFound("gym not found");
-        if(status !== verif){
+        if (!gym) throw BaseError.notFound("gym not found");
+        if (gym.verified === "REJECTED" && status === "REJECTED") {
+            throw BaseError.badRequest("Gym already rejected");
+        }
+        if (status !== verif) {
             verif = "REJECTED"
             message = "Rejected gym"
         }
@@ -387,7 +399,7 @@ class GymService {
         return message;
     }
 
-    async getGymByOwnerId(userId){
+    async getGymByOwnerId(userId) {
         const gym = await prisma.gym.findMany({
             where: {
                 ownerId: userId
@@ -398,13 +410,13 @@ class GymService {
 
 
     // create penjaga gym
-    async createPenjagaGym(data, ownerId){
+    async createPenjagaGym(data, ownerId) {
         const checkGym = await prisma.gym.findFirst({
             where: {
                 ownerId
             }
         });
-        if(!checkGym) throw BaseError.notFound("gym not found");
+        if (!checkGym) throw BaseError.notFound("gym not found");
 
         const emailExist = await prisma.user.findUnique({
             where: {
@@ -453,10 +465,10 @@ class GymService {
             }
         });
 
-        return {message: "Succefully create penjaga", data: user};
+        return { message: "Succefully create penjaga", data: user };
     }
 
-    async deletePenjagaGym(userId, ownerId){
+    async deletePenjagaGym(userId, ownerId) {
         const findUser = await prisma.user.findFirst({
             where: {
                 id: userId,
@@ -466,28 +478,28 @@ class GymService {
                 }
             }
         });
-        
-        if(!findUser) throw BaseError.notFound("Penjaga not found")
+
+        if (!findUser) throw BaseError.notFound("Penjaga not found")
 
         await prisma.user.delete({
             where: {
                 id: findUser.id
             }
         })
-        return {message: "Succesfully delete penjaga"};
+        return { message: "Succesfully delete penjaga" };
     }
 
     // dapetin semua penjaga di gym tertentu or dapetin semua penajga di owner itu 
 
     async getAllPenjaga(data) {
-        
+
         const penjaga = await prisma.user.findMany({
             where: {
-            role: "PENJAGA",
-            gym: {
-                ownerId: data.ownerId,
-                ...(data.id ? { id: data.id } : {})
-            }
+                role: "PENJAGA",
+                gym: {
+                    ownerId: data.ownerId,
+                    ...(data.id ? { id: data.id } : {})
+                }
             },
             select: {
                 id: true,
@@ -502,16 +514,16 @@ class GymService {
     }
 
     // dapetin penjaga by id
-    async getPenjagaById(data){
+    async getPenjagaById(data) {
         console.log(data);
-        
+
         const penjaga = await prisma.user.findFirst({
             where: {
                 id: data.userId,
                 role: "PENJAGA",
                 gym: {
                     ownerId: data.ownerId,
-                ...(data.id ? { id: data.id } : {})
+                    ...(data.id ? { id: data.id } : {})
                 }
             },
             select: {
@@ -526,8 +538,8 @@ class GymService {
                 }
             }
         })
-        if(!penjaga) throw BaseError.notFound("Penjaga not found")
-            return penjaga
+        if (!penjaga) throw BaseError.notFound("Penjaga not found")
+        return penjaga
     }
 
     // perpanjang member manual

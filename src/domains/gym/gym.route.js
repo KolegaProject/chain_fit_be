@@ -112,6 +112,12 @@ class GymRoutes extends BaseRoutes {
       tryCatch(gymController.gymNotVerified),
     ]);
 
+    this.router.get("/verified-gym/list", [
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["ADMIN"]),
+      tryCatch(gymController.gymList),
+    ]);
+
     this.router.get("/verified-gym/:id", [
       authTokenMiddleware.authenticate,
       authTokenMiddleware.authorizeUser(["ADMIN"]),
@@ -126,6 +132,8 @@ class GymRoutes extends BaseRoutes {
       validateCredentials(verifiedStatus),
       tryCatch(gymController.verified),
     ]);
+
+
 
     // staff gym
     this.router.post("/:id/gym-staff", [
@@ -268,6 +276,8 @@ class GymRoutes extends BaseRoutes {
       validateCredentials(queryGymSchema, "query"),
       tryCatch(gymController.index),
     ]);
+
+
 
 
     // ========== Update gym (saran) ==========
