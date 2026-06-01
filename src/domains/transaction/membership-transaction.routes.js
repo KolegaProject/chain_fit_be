@@ -17,6 +17,12 @@ class MembershipTransactionRoutes extends BaseRoutes {
     this.router.post("/webhook-midtrans",
       tryCatch(membershipTransactionController.webhookHandler)
     );
+
+    this.router.get("/history",
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["MEMBER"]),
+      tryCatch(membershipTransactionController.index)
+    );
   }
 }
 

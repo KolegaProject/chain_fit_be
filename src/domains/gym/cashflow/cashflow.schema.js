@@ -106,9 +106,19 @@ const updateCashflowSchema = Joi.object({
     }),
 });
 
+const trendOverviewCashflowSchema = Joi.object({
+  year: Joi.string()
+    .pattern(/^\d{4}$/)
+    .optional()
+    .messages({
+      "string.pattern.base": "year must be a 4 digit number"
+    }),
+});
+
 export {
   cashflowSchema,
   createCashflowSchema,
   updateCashflowSchema,
   getAllCashflowSchema,
+  trendOverviewCashflowSchema
 };

@@ -49,7 +49,7 @@ import {
 } from "./membership/gym-membership.schema.js";
 
 // CASHFLOW DOMAIN
-import { cashflowSchema, createCashflowSchema, getAllCashflowSchema, updateCashflowSchema } from "./cashflow/cashflow.schema.js";
+import { cashflowSchema, createCashflowSchema, getAllCashflowSchema, trendOverviewCashflowSchema, updateCashflowSchema } from "./cashflow/cashflow.schema.js";
 import cashflowController from "./cashflow/cashflow.controller.js";
 
 class GymRoutes extends BaseRoutes {
@@ -255,12 +255,20 @@ class GymRoutes extends BaseRoutes {
       tryCatch(gymController.update),
     ]);
 
+    this.router.get("/:id/dashboard-overview", [
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["OWNER"]),
+      validateCredentials(gymSchema, "params"),
+      tryCatch(gymController.dashboardOverview),
+    ]);
+
     this.router.get("/", [
       authTokenMiddleware.authenticate,
       authTokenMiddleware.authorizeUser(["OWNER", "MEMBER", "PENJAGA"]),
       validateCredentials(queryGymSchema, "query"),
       tryCatch(gymController.index),
     ]);
+
 
     // ========== Update gym (saran) ==========
     // this.router.patch("/:id", [
@@ -305,6 +313,15 @@ class GymRoutes extends BaseRoutes {
       validateCredentials(gymSchema, "params"),
       validateCredentials(getAllCashflowSchema, "query"),
       tryCatch(cashflowController.index),
+    );
+
+    this.router.get(
+      "/:id/cashflow/overview",
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
+      validateCredentials(gymSchema, "params"),
+      validateCredentials(trendOverviewCashflowSchema, "query"),
+      tryCatch(cashflowController.trendOverview),
     );
 
     this.router.get(

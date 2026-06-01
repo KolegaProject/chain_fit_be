@@ -18,5 +18,11 @@ class MembershipTransactionController {
     return successResponse(res, webhookResult);
   }
 
+  async index(req, res){
+    const userId = req.user.id;
+    const transactions = await membershipTransactionService.getAllTransaction(userId);
+    return successResponse(res, transactions);
+  }
+
 }
 export default new MembershipTransactionController();

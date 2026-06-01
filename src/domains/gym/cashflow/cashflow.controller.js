@@ -81,6 +81,16 @@ class CashflowController {
 
     return successResponse(res, cashflow);
   }
+
+  async trendOverview(req, res) {
+    const userId = req.user.id; 
+    const gymId = Number(req.params.id);
+    const year = req.query.year ? Number(req.query.year) : new Date().getUTCFullYear();
+
+    const trend = await cashflowService.getTrendOverview(userId, gymId, year);
+
+    return successResponse(res, trend);
+  }
 }
 
 export default new CashflowController();

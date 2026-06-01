@@ -109,6 +109,7 @@ jobs:
       IS3_BUCKET_NAME: gym-test
       IS3_PREFIX: ${{ secrets.IS3_PREFIX }}
       MIDTRANS_SERVER_KEY: ${{ secrets.MIDTRANS_SERVER_KEY_TEST }}
+      FIREBASE_SERVICE_ACCOUNT_PATH: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PATH }}
 
     steps:
       - name: Checkout source code
@@ -211,6 +212,7 @@ jobs:
               -e MIDTRANS_IS_PRODUCTION="${{ secrets.MIDTRANS_IS_PRODUCTION }}" \
               -e MIDTRANS_SERVER_KEY="${{ secrets.MIDTRANS_SERVER_KEY }}" \
               -e URL_PATH_EQUIPMENT="${{ secrets.URL_PATH_EQUIPMENT }}" \
+              -e FIREBASE_SERVICE_ACCOUNT_PATH="${{ secrets.FIREBASE_SERVICE_ACCOUNT_PATH }}" \
               -e FE_URL="${{secrets.FE_URL}}" \
               --restart unless-stopped \
               -e BE_URL="${{ secrets.BE_URL }}" \

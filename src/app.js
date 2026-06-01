@@ -11,6 +11,7 @@ import logger from "./utils/logger.js";
 import morgan from "morgan";
 import multer from "multer";
 import path from "path";
+import http from "http";
 
 import prisma from "./config/db.js";
 import corsOptions from "./config/cors.js";
@@ -20,6 +21,8 @@ import membershipTransactionRoutes from "./domains/transaction/membership-transa
 import attendanceRoute from "./domains/attendance/attendance.route.js";
 import equipmentRoute from "./domains/equipment/equipment.route.js";
 import { startSchedulers } from "./jobs/scheduler.js";
+import { initSocket } from "./config/socket.js";
+import notifyRoute from "./domains/notify/notify.route.js";
 
 class ExpressApplication {
     app;
@@ -53,16 +56,16 @@ class ExpressApplication {
                 }
             }).fields([
                 {
-                name: "image",
-                maxCount: 10,
+                    name: "image",
+                    maxCount: 10,
                 },
             ])
         );
-        
+
         this.app.use(express.json({ type: "application/json", limit: "50mb" }));
         this.app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 
-        this.app.use(cors(corsOptions)); 
+        this.app.use(cors(corsOptions));
         //  __init__
 
         this.configureAssets();
@@ -81,9 +84,9 @@ class ExpressApplication {
             // cors(),
         ]);
 
-        
+
     }
-    
+
     setupMiddlewares(middlewaresArr) {
         middlewaresArr.forEach((middleware) => {
             this.app.use(middleware);
@@ -93,10 +96,12 @@ class ExpressApplication {
     setupRoute() {
         // Set Route here base (/api/v1)
         this.app.use("/api/v1/auth", AuthRoutes);
+        this.app.use("/api/v1/fcm-token", notifyRoute);
         this.app.use("/api/v1/gym", gymRoute);
         this.app.use("/api/v1/equipment", equipmentRoute);
         this.app.use("/api/v1/transaction", membershipTransactionRoutes);
         this.app.use("/api/v1/attendance", attendanceRoute);
+
     }
 
     configureAssets() {
@@ -114,13 +119,23 @@ class ExpressApplication {
     async start() {
         try {
             await prisma.$connect();
-            this.app.listen(this.port, () => {
+            // this.app.listen(this.port, () => {
+            //     logger.info(`🚀 Server running on port ${this.port}`);
+            // });
+
+            const server = http.createServer(this.app);
+
+            initSocket(server);
+
+            server.listen(this.port, () => {
                 logger.info(`🚀 Server running on port ${this.port}`);
             });
             startSchedulers();
+            
+            return server;
         } catch (error) {
-                logger.error("❌ Server failed to start:", error);
-                process.exit(1);
+            logger.error("❌ Server failed to start:", error);
+            process.exit(1);
         }
     }
 }

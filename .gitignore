@@ -2,3 +2,4 @@
 /src/generated/prisma
 node_modules
 tests/helpers/test-gym-image.png
+firebase-service-account.json

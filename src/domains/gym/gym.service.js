@@ -4,6 +4,7 @@ import prisma from "../../config/db.js";
 import { uploadFile } from "../../utils/saveImage.js";
 import { hashPassword } from "../../utils/passwordConfig.js";
 
+const DAY_LABELS = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 
 class GymService {
 
@@ -148,6 +149,186 @@ class GymService {
         })
         if(!gym) throw BaseError.notFound("gym not found");
         return gym;
+    }
+
+    async getGymDashboardOverview(id, userId){
+        const gym = await prisma.gym.findFirst({
+            where: {
+                id,
+                verified: "APPROVED",
+                ownerId: userId
+            },
+            select: {
+                id: true,
+                name: true,
+                address: true,
+                jamOperasional: true,
+                gymImage: {
+                    select: {
+                        id: true,
+                        url: true
+                    }
+                }
+            }
+        })
+        if(!gym) throw BaseError.notFound("gym not found");
+
+        const now = new Date();
+        const startOfToday = new Date(now);
+        startOfToday.setHours(0, 0, 0, 0);
+
+        const sevenDaysAgo = new Date(startOfToday);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+
+        const [
+            totalMember,
+            activeStaff,
+            totalEquipment,
+            allCashflows,
+            recentTransactions,
+            equipments,
+        ] = await Promise.all([
+            prisma.membership.count({
+                where: {
+                    gymId: id,
+                    status: "AKTIF",
+                    endDate: {
+                        gte: now,
+                    },
+                },
+            }),
+            prisma.user.count({
+                where: {
+                    role: "PENJAGA",
+                    gymId: id,
+                },
+            }),
+            prisma.equipment.count({
+                where: {
+                    gymId: id,
+                },
+            }),
+            prisma.gymCashflow.findMany({
+                where: {
+                    gymId: id,
+                    isDeleted: false,
+                },
+                select: {
+                    amount: true,
+                    transactionType: true,
+                    date: true,
+                },
+                orderBy: {
+                    date: "desc",
+                },
+            }),
+            prisma.gymCashflow.findMany({
+                where: {
+                    gymId: id,
+                    isDeleted: false,
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    amount: true,
+                    transactionType: true,
+                    cashflowType: true,
+                    date: true,
+                    note: true,
+                },
+                orderBy: {
+                    date: "desc",
+                },
+                take: 5,
+            }),
+            prisma.equipment.findMany({
+                where: {
+                    gymId: id,
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    healthStatus: true,
+                    jumlah: true,
+                },
+                orderBy: {
+                    createdAt: "desc",
+                },
+                take: 5,
+            }),
+        ]);
+
+        const incomeTrendMap = new Map();
+        const expenseTrendMap = new Map();
+
+        for (let i = 0; i < 7; i++) {
+            const day = new Date(sevenDaysAgo);
+            day.setDate(sevenDaysAgo.getDate() + i);
+            const key = day.toISOString().slice(0, 10);
+            incomeTrendMap.set(key, {
+                date: key,
+                dayLabel: DAY_LABELS[day.getDay()],
+                total: 0,
+            });
+            expenseTrendMap.set(key, {
+                date: key,
+                dayLabel: DAY_LABELS[day.getDay()],
+                total: 0,
+            });
+        }
+
+        let totalIncome = 0;
+        let totalExpense = 0;
+
+        for (const cashflow of allCashflows) {
+            const amount = Number(cashflow.amount);
+            const cashflowDate = new Date(cashflow.date);
+            const dateKey = cashflowDate.toISOString().slice(0, 10);
+
+            if (cashflow.transactionType === "PENDAPATAN") {
+                totalIncome += amount;
+                if (incomeTrendMap.has(dateKey)) {
+                    incomeTrendMap.get(dateKey).total += amount;
+                }
+            }
+
+            if (cashflow.transactionType === "PENGELUARAN") {
+                totalExpense += amount;
+                if (expenseTrendMap.has(dateKey)) {
+                    expenseTrendMap.get(dateKey).total += amount;
+                }
+            }
+        }
+
+        return {
+            ...gym,
+            summary: {
+                totalMember,
+                activeStaff,
+                totalEquipment,
+                totalIncome,
+            },
+            trends: {
+                incomeLast7Days: Array.from(incomeTrendMap.values()),
+                expenseLast7Days: Array.from(expenseTrendMap.values()),
+            },
+            recentTransactions: recentTransactions.map((item) => ({
+                ...item,
+                amount: Number(item.amount),
+            })),
+            facilityConditions: equipments.map((item) => ({
+                id: item.id,
+                name: item.name,
+                healthStatus: item.healthStatus,
+                quantity: item.jumlah,
+                conditionPercent: item.healthStatus === "BAIK" ? 100 : 30,
+            })),
+            balance: {
+                totalIncome,
+                totalExpense,
+                netBalance: totalIncome - totalExpense,
+            },
+        };
     }
     
     async getListGymNotVerifed(){
