@@ -137,7 +137,7 @@ describe('AuthController', () => {
 
   test('verifyResetPassword should redirect to failed page when token verification fails', async () => {
     const previousFeUrl = process.env.FE_URL;
-    process.env.FE_URL = 'https://frontend.example.com';
+    process.env.FE_URL = 'https://chain-fit-web.vercel.app';
 
     jest.spyOn(AuthService, 'verifyResetPassword').mockResolvedValue({
       status: 400,
@@ -156,7 +156,7 @@ describe('AuthController', () => {
 
       expect(AuthService.verifyResetPassword).toHaveBeenCalledWith('bad-token');
       expect(res.redirect).toHaveBeenCalledWith(
-        'https://frontend.example.com/reset-password?verify=failed&message=Invalid token'
+        'https://chain-fit-web.vercel.app/#/reset-password?verify=failed&message=Invalid token'
       );
     } finally {
       process.env.FE_URL = previousFeUrl;
@@ -165,7 +165,7 @@ describe('AuthController', () => {
 
   test('verifyResetPassword should redirect to success page when token verification succeeds', async () => {
     const previousFeUrl = process.env.FE_URL;
-    process.env.FE_URL = 'https://frontend.example.com';
+    process.env.FE_URL = 'https://chain-fit-web.vercel.app';
 
     jest.spyOn(AuthService, 'verifyResetPassword').mockResolvedValue({
       status: 200,
@@ -185,7 +185,7 @@ describe('AuthController', () => {
 
       expect(AuthService.verifyResetPassword).toHaveBeenCalledWith('valid-token');
       expect(res.redirect).toHaveBeenCalledWith(
-        'https://frontend.example.com/reset-password?verify=success&token=valid-token'
+        'https://chain-fit-web.vercel.app/#/reset-password?verify=success&token=valid-token'
       );
     } finally {
       process.env.FE_URL = previousFeUrl;
