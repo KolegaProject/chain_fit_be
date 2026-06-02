@@ -161,8 +161,7 @@ class AuthController {
         }
         console.log(response);
         
-
-        return res.redirect(`${process.env.FE_URL}/reset-password?verify=success&token=${response.data}`);
+        return res.redirect(`${process.env.FE_URL}/#/reset-password?verify=success&token=${response.data}`);
     }
 
     /**
