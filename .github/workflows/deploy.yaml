@@ -110,6 +110,8 @@ jobs:
       IS3_PREFIX: ${{ secrets.IS3_PREFIX }}
       MIDTRANS_SERVER_KEY: ${{ secrets.MIDTRANS_SERVER_KEY_TEST }}
       FIREBASE_SERVICE_ACCOUNT_PATH: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PATH }}
+      EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
 
     steps:
       - name: Checkout source code
@@ -207,6 +209,8 @@ jobs:
               -e IS3_END_POINT="${{ secrets.IS3_END_POINT }}" \
               -e IS3_PREFIX="${{ secrets.IS3_PREFIX }}" \
               -e IS3_REGION="${{ secrets.IS3_REGION }}" \
+              -e EMAIL_USERNAME="${{ secrets.EMAIL_USERNAME }}" \
+              -e EMAIL_PASSWORD="${{ secrets.EMAIL_PASSWORD }}" \
               -e IS3_SECRET_ACCESS_KEY_ID="${{ secrets.IS3_SECRET_ACCESS_KEY_ID }}" \
               -e MIDTRANS_CLIENT_KEY="${{ secrets.MIDTRANS_CLIENT_KEY }}" \
               -e MIDTRANS_IS_PRODUCTION="${{ secrets.MIDTRANS_IS_PRODUCTION }}" \
