@@ -422,7 +422,7 @@ describe('Auth HTTP integration', () => {
       .set('Accept', 'application/json');
 
     expect(response.status).toBe(302);
-    expect(response.headers.location).toContain(`${process.env.FE_URL}/reset-password?verify=success&token=${token}`);
+    expect(response.headers.location).toContain(`${process.env.FE_URL}/#/reset-password?verify=success&token=${token}`);
   });
 
   test('GET /api/v1/auth/verify-reset-password/:token should redirect failed for invalid token', async () => {
@@ -432,7 +432,7 @@ describe('Auth HTTP integration', () => {
       .set('Accept', 'application/json');
 
     expect(response.status).toBe(302);
-    expect(response.headers.location).toContain(`${process.env.FE_URL}/reset-password?verify=failed&message=Invalid%20token`);
+    expect(response.headers.location).toContain(`${process.env.FE_URL}/#/reset-password?verify=failed&message=Invalid%20token`);
   });
 
   test('POST /api/v1/auth/reset-password should update password using valid reset token', async () => {
