@@ -2,7 +2,8 @@ const allowedOrigins = [
     "http://localhost:3000",
     "http://localhost:3001",
     "http://localhost:56514",
-    "https://chain-fit-web-admin.vercel.app"
+    "https://chain-fit-web-admin.vercel.app",
+    "https://chain-fit-web.vercel.app"
 ];
 
 // const corsOptions = {
