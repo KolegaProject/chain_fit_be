@@ -69,6 +69,87 @@ describe('GymService integration (MySQL/Prisma)', () => {
     ]);
   });
 
+  test('updateGym should update gym data without requiring a new image', async () => {
+    const owner = await createOwner();
+    const gym = await createGym(owner.id, {
+      name: 'Editable Service Gym',
+      address: 'Old Address',
+      verified: 'APPROVED',
+      gymImages: ['https://files.test/old-gym.png']
+    });
+
+    const result = await GymService.updateGym(
+      {
+        name: 'Updated Service Gym',
+        maxCapacity: 200,
+        address: 'New Address',
+        jamOperasional: '05:00-23:00',
+        latitude: -6.21,
+        longitude: 106.82,
+        facility: ['WiFi', 'Cafe'],
+        tag: 'updated-tag',
+        description: 'Updated from service integration test'
+      },
+      owner.id,
+      gym.id
+    );
+
+    const persistedGym = await testPrisma.gym.findUnique({
+      where: { id: gym.id },
+      include: { gymImage: true }
+    });
+
+    expect(uploadFileMock).not.toHaveBeenCalled();
+    expect(result.name).toBe('Updated Service Gym');
+    expect(result.gymImage).toHaveLength(1);
+    expect(result.gymImage[0].url).toBe('https://files.test/old-gym.png');
+    expect(persistedGym.name).toBe('Updated Service Gym');
+    expect(persistedGym.address).toBe('New Address');
+    expect(persistedGym.gymImage).toHaveLength(1);
+    expect(persistedGym.gymImage[0].url).toBe('https://files.test/old-gym.png');
+  });
+
+  test('updateGym should replace gym images when a new image is uploaded', async () => {
+    const owner = await createOwner();
+    const gym = await createGym(owner.id, {
+      name: 'Replace Image Gym',
+      verified: 'APPROVED',
+      gymImages: ['https://files.test/old-gym.png']
+    });
+
+    uploadFileMock.mockResolvedValue([
+      'https://files.test/new-gym-1.png',
+      'https://files.test/new-gym-2.png'
+    ]);
+
+    const result = await GymService.updateGym(
+      {
+        name: 'Replace Image Gym Updated'
+      },
+      owner.id,
+      gym.id,
+      [{ originalname: 'new-gym.png', buffer: Buffer.from('1'), mimetype: 'image/png' }]
+    );
+
+    const persistedGym = await testPrisma.gym.findUnique({
+      where: { id: gym.id },
+      include: { gymImage: true }
+    });
+
+    expect(uploadFileMock).toHaveBeenCalledTimes(1);
+    expect(result.name).toBe('Replace Image Gym Updated');
+    expect(result.gymImage).toHaveLength(2);
+    expect(result.gymImage.map((image) => image.url)).toEqual([
+      'https://files.test/new-gym-1.png',
+      'https://files.test/new-gym-2.png'
+    ]);
+    expect(persistedGym.gymImage).toHaveLength(2);
+    expect(persistedGym.gymImage.map((image) => image.url)).toEqual([
+      'https://files.test/new-gym-1.png',
+      'https://files.test/new-gym-2.png'
+    ]);
+  });
+
   test('getAllGym should return only approved gyms and support search filter', async () => {
     const owner = await createOwner();
     const approvedGym = await createGym(owner.id, {

@@ -103,7 +103,7 @@ describe('GymController', () => {
     );
   });
 
-  test('update should parse optional numeric and json fields then return success response', async () => {
+  test('update should parse optional numeric/json fields, forward image, and return success response', async () => {
     jest.spyOn(gymService, 'updateGym').mockResolvedValue({
       id: 7,
       name: 'Updated Gym'
@@ -122,6 +122,9 @@ describe('GymController', () => {
         fac: '["WiFi","Cafe"]',
         tag: 'elite',
         description: 'Renovated branch'
+      },
+      files: {
+        image: [{ originalname: 'updated-gym.png' }]
       }
     };
     const res = createMockRes();
@@ -141,12 +144,54 @@ describe('GymController', () => {
         description: 'Renovated branch'
       },
       55,
-      7
+      7,
+      [{ originalname: 'updated-gym.png' }]
     );
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.jsonPayload.data).toEqual({
       id: 7,
       name: 'Updated Gym'
+    });
+  });
+
+  test('update should still work when no image is uploaded', async () => {
+    jest.spyOn(gymService, 'updateGym').mockResolvedValue({
+      id: 8,
+      name: 'Updated Without Image'
+    });
+
+    const req = {
+      params: { id: '8' },
+      user: { id: 77 },
+      body: {
+        name: 'Updated Without Image'
+      },
+      files: {}
+    };
+    const res = createMockRes();
+
+    await GymController.update(req, res);
+
+    expect(gymService.updateGym).toHaveBeenCalledWith(
+      {
+        name: 'Updated Without Image',
+        maxCapacity: undefined,
+        address: undefined,
+        jamOperasional: undefined,
+        latitude: undefined,
+        longitude: undefined,
+        facility: undefined,
+        tag: undefined,
+        description: undefined
+      },
+      77,
+      8,
+      undefined
+    );
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.jsonPayload.data).toEqual({
+      id: 8,
+      name: 'Updated Without Image'
     });
   });
 

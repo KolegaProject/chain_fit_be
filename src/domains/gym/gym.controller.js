@@ -32,8 +32,9 @@ class GymController {
             if(fac) facility = JSON.parse(fac)
             const ownerId = req.user.id;
             const id = Number(req.params.id);
+            const img = req.files?.image;
 
-            const gym = await gymService.updateGym({name, maxCapacity, address, jamOperasional, latitude, longitude, facility, tag, description}, ownerId, id);
+            const gym = await gymService.updateGym({name, maxCapacity, address, jamOperasional, latitude, longitude, facility, tag, description}, ownerId, id, img);
 
             if(!gym) throw new Error("Failed to update gym");
 

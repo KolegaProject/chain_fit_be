@@ -70,28 +70,61 @@ class GymService {
         return "succesfully delete gym"
     }
 
-    // nanti dulu bingung
-    async updateGym(data, userId, id) {
-        console.log(data);
+    async updateGym(data, userId, id, img = []) {
+        return await prisma.$transaction(async (tx) => {
+            const checkGym = await tx.gym.findFirst({
+                where: {
+                    id,
+                    ownerId: userId
+                },
+                include: {
+                    gymImage: true
+                }
+            });
+            if (!checkGym) throw BaseError.notFound("Gym not found");
 
-        const checkGym = await prisma.gym.findFirst({
-            where: {
-                id,
-                ownerId: userId
+            const updateGym = await tx.gym.update({
+                where: {
+                    id: checkGym.id
+                },
+                data: data
+            });
+            if (!updateGym) throw new Error("failed to update gym");
+
+            if (img && img.length > 0) {
+                const gymUrlPath = `image-profile/${checkGym.ownerId}/${checkGym.id}`;
+                const uploadedImageUrls = await uploadFile(gymUrlPath, img);
+
+                if (!uploadedImageUrls || !uploadedImageUrls.length) {
+                    throw new Error("failed to upload image");
+                }
+
+                await tx.gymImage.deleteMany({
+                    where: {
+                        gymId: checkGym.id
+                    }
+                });
+
+                await tx.gymImage.createMany({
+                    data: uploadedImageUrls.map((url) => ({
+                        gymId: checkGym.id,
+                        url,
+                    })),
+                });
             }
-        });
-        if (!checkGym) throw BaseError.notFound("Gym not found");
 
-        // jangan pake update gambar dulu cuman data aja
-        // data = {name, maxCapacity, address, jamOperasional}
-        const updateGym = await prisma.gym.update({
-            where: {
-                id: checkGym.id
-            },
-            data: data
-        })
-        if (!updateGym) throw new Error("failed to update gym");
-        return updateGym;
+            return await tx.gym.findUnique({
+                where: { id: checkGym.id },
+                include: {
+                    gymImage: {
+                        select: {
+                            id: true,
+                            url: true
+                        }
+                    }
+                }
+            });
+        });
 
     }
 

@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals';
+import { DeleteObjectCommand, ListObjectsV2Command, S3Client } from '@aws-sdk/client-s3';
 
 import {
   cleanupDatabase,
@@ -23,6 +24,27 @@ process.env.DATABASE_URL_TEST = getTestDatabaseUrl();
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'integration-test-secret';
 process.env.NODE_ENV = 'test';
 
+const TEST_IMAGE_BUFFER = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9WlH0KQAAAAASUVORK5CYII=',
+  'base64'
+);
+const uploadedObjectKeys = [];
+
+const s3 = new S3Client({
+  endpoint: process.env.IS3_END_POINT,
+  region: process.env.IS3_REGION,
+  forcePathStyle: true,
+  credentials: {
+    accessKeyId: process.env.IS3_ACCESS_KEY_ID,
+    secretAccessKey: process.env.IS3_SECRET_ACCESS_KEY_ID
+  }
+});
+
+function extractObjectKeyFromUrl(url) {
+  const base = `${process.env.IS3_END_POINT}/${process.env.IS3_BUCKET_NAME}/`;
+  return url.startsWith(base) ? url.slice(base.length) : null;
+}
+
 jest.setTimeout(30000);
 
 describe('Gym HTTP integration', () => {
@@ -31,6 +53,16 @@ describe('Gym HTTP integration', () => {
   });
 
   afterAll(async () => {
+    for (const key of uploadedObjectKeys) {
+      try {
+        await s3.send(new DeleteObjectCommand({
+          Bucket: process.env.IS3_BUCKET_NAME,
+          Key: key
+        }));
+      } catch (_) {
+        // noop cleanup best-effort
+      }
+    }
     await cleanupDatabase();
     await disconnectTestDatabase();
   });
@@ -149,6 +181,86 @@ describe('Gym HTTP integration', () => {
     expect(updatedGym.name).toBe('Updated Gym Name');
     expect(updatedGym.address).toBe('Jl. Baru No. 2');
     expect(updatedGym.tag).toBe('premium');
+  });
+
+  test('PUT /api/v1/gym/:id should update gym and replace image when a new image is uploaded', async () => {
+    const { user: owner } = await createAuthenticatedOwner({ password: 'Password123!' });
+    const gym = await createGym(owner.id, {
+      name: 'Image Editable Gym',
+      address: 'Jl. Gambar Lama',
+      verified: 'APPROVED',
+      gymImages: ['https://files.test/old-image.png']
+    });
+
+    const request = await createRequest();
+    const response = await request
+      .put(`/api/v1/gym/${gym.id}`)
+      .set('Authorization', createAuthHeaderForUser(owner))
+      .field('name', 'Image Updated Gym')
+      .field('fac', JSON.stringify(['Studio', 'Cafe']))
+      .attach('image', TEST_IMAGE_BUFFER, {
+        filename: 'updated-gym-image.png',
+        contentType: 'image/png'
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe('OK');
+    expect(response.body.data.name).toBe('Image Updated Gym');
+    expect(response.body.data.gymImage).toHaveLength(1);
+
+    const updatedGym = await testPrisma.gym.findUnique({
+      where: { id: gym.id },
+      include: { gymImage: true }
+    });
+
+    expect(updatedGym.gymImage).toHaveLength(1);
+    expect(updatedGym.gymImage[0].url).toContain(`${process.env.IS3_PREFIX}/image-profile/${owner.id}/${gym.id}`);
+
+    const objectKey = extractObjectKeyFromUrl(updatedGym.gymImage[0].url);
+    expect(objectKey).toBeTruthy();
+
+    const prefix = `${process.env.IS3_PREFIX}/image-profile/${owner.id}/${gym.id}/`;
+    const listResult = await s3.send(new ListObjectsV2Command({
+      Bucket: process.env.IS3_BUCKET_NAME,
+      Prefix: prefix
+    }));
+
+    expect((listResult.Contents || []).length).toBeGreaterThanOrEqual(1);
+    uploadedObjectKeys.push(objectKey);
+  });
+
+  test('PUT /api/v1/gym/:id should still update gym when no image is uploaded', async () => {
+    const { user: owner } = await createAuthenticatedOwner({ password: 'Password123!' });
+    const gym = await createGym(owner.id, {
+      name: 'No Image Update Gym',
+      address: 'Jl. Lama No. 3',
+      verified: 'APPROVED',
+      gymImages: ['https://files.test/existing-image.png']
+    });
+
+    const request = await createRequest();
+    const response = await request
+      .put(`/api/v1/gym/${gym.id}`)
+      .set('Authorization', createAuthHeaderForUser(owner))
+      .send({
+        name: 'Still Updated Without Image',
+        address: 'Jl. Baru No. 3',
+        fac: JSON.stringify(['WiFi'])
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe('OK');
+    expect(response.body.data.name).toBe('Still Updated Without Image');
+    expect(response.body.data.gymImage).toHaveLength(1);
+    expect(response.body.data.gymImage[0].url).toBe('https://files.test/existing-image.png');
+
+    const updatedGym = await testPrisma.gym.findUnique({
+      where: { id: gym.id },
+      include: { gymImage: true }
+    });
+    expect(updatedGym.address).toBe('Jl. Baru No. 3');
+    expect(updatedGym.gymImage).toHaveLength(1);
+    expect(updatedGym.gymImage[0].url).toBe('https://files.test/existing-image.png');
   });
 
   test('PUT /api/v1/gym/:id should reject update by non-owner role', async () => {
