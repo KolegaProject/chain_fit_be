@@ -257,7 +257,7 @@ class GymRoutes extends BaseRoutes {
     ]);
     this.router.put("/:id", [
       authTokenMiddleware.authenticate,
-      authTokenMiddleware.authorizeUser(["OWNER"]),
+      authTokenMiddleware.authorizeUser(["OWNER", "PENJAGA"]),
       validateCredentials(gymSchema, "params"),
       validateCredentials(updateGymSchema),
       tryCatch(gymController.update),
