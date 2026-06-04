@@ -246,6 +246,84 @@ describe('Transaction HTTP integration', () => {
     expect(cashflows).toHaveLength(1);
   });
 
+  test('GET /api/v1/transaction/history should return membership transaction history for authenticated member', async () => {
+    const { user: owner } = await createAuthenticatedOwner({ password: 'Password123!' });
+    const { user: member } = await createAuthenticatedMember({ password: 'Password123!' });
+    const anotherMember = await createAuthenticatedMember({
+      username: 'other_member_transaction_history',
+      email: 'other_member_transaction_history@example.com',
+      password: 'Password123!'
+    });
+
+    const gym = await createGym(owner.id, { name: 'History Gym', verified: 'APPROVED' });
+    const membershipPackage = await createMembershipPackage(gym.id, {
+      name: 'History Package',
+      price: '100000.00',
+      durationDays: 30
+    });
+
+    await createMembership(member.id, gym.id, membershipPackage.id, { status: 'AKTIF' });
+    await createMembership(anotherMember.user.id, gym.id, membershipPackage.id, { status: 'AKTIF' });
+
+    const firstTransaction = await createTransaction({
+      gymId: gym.id,
+      userId: member.id,
+      amount: '102000.00',
+      orderId: 'ORDER-HISTORY-1',
+      status: 'PAID',
+      paymentMethod: 'qris',
+      note: 'Membership package purchase: History Package'
+    });
+
+    const secondTransaction = await createTransaction({
+      gymId: gym.id,
+      userId: member.id,
+      amount: '152000.00',
+      orderId: 'ORDER-HISTORY-2',
+      status: 'PENDING',
+      paymentMethod: 'bank_transfer',
+      note: 'Membership package purchase: History Package 2'
+    });
+
+    await createTransaction({
+      gymId: gym.id,
+      userId: anotherMember.user.id,
+      amount: '202000.00',
+      orderId: 'ORDER-HISTORY-OTHER',
+      status: 'PAID',
+      paymentMethod: 'qris',
+      note: 'Should not be visible to requested member'
+    });
+
+    const request = await createRequest();
+    const response = await request
+      .get('/api/v1/transaction/history')
+      .set('Authorization', createAuthHeaderForUser(member));
+
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe('OK');
+    expect(response.body.recordsTotal).toBe(2);
+    expect(response.body.data).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: firstTransaction.id,
+          userId: member.id,
+          gymId: gym.id,
+          orderId: 'ORDER-HISTORY-1',
+          status: 'PAID'
+        }),
+        expect.objectContaining({
+          id: secondTransaction.id,
+          userId: member.id,
+          gymId: gym.id,
+          orderId: 'ORDER-HISTORY-2',
+          status: 'PENDING'
+        })
+      ])
+    );
+    expect(response.body.data.every((transaction) => transaction.userId === member.id)).toBe(true);
+  });
+
   test('POST /api/v1/transaction/webhook-midtrans should ignore invalid signature and keep transaction pending', async () => {
     const { user: owner } = await createAuthenticatedOwner({ password: 'Password123!' });
     const { user: member } = await createAuthenticatedMember({ password: 'Password123!' });
