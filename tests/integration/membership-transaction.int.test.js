@@ -151,6 +151,76 @@ describe('MembershipTransactionService integration (MySQL/Prisma)', () => {
     expect(cashflows[0].cashflowType).toBe('CASHLESS');
   });
 
+  test('updateTransactionStatus should extend active membership duration when renewal payment succeeds', async () => {
+    const owner = await createOwner();
+    const member = await createMember();
+    const gym = await createGym(owner.id);
+    const currentPackage = await createMembershipPackage(gym.id, {
+      name: 'Current Membership',
+      durationDays: 30,
+      price: '100000.00'
+    });
+    const renewalPackage = await createMembershipPackage(gym.id, {
+      name: 'Renewal Membership',
+      durationDays: 30,
+      price: '120000.00'
+    });
+
+    const currentEndDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+    const existingMembership = await createMembership(member.id, gym.id, currentPackage.id, {
+      startDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      endDate: currentEndDate,
+      status: 'AKTIF'
+    });
+
+    const transaction = await testPrisma.transaction.create({
+      data: {
+        gymId: gym.id,
+        userId: member.id,
+        date: new Date(),
+        amount: '122000.00',
+        type: 'PENDAPATAN',
+        note: 'Membership package purchase: Renewal Membership',
+        orderId: 'GYM-TEST-RENEWAL-1'
+      }
+    });
+
+    const result = await MembershipTransactionService.updateTransactionStatus({
+      order_id: transaction.orderId,
+      transaction_status: 'settlement',
+      payment_type: 'qris',
+      fraud_status: 'accept',
+      metadata: {
+        type: 'membership',
+        packageId: renewalPackage.id,
+        gymId: gym.id,
+        userId: member.id,
+        transactionId: transaction.id
+      }
+    });
+
+    const updatedTransaction = await testPrisma.transaction.findUnique({
+      where: { id: transaction.id }
+    });
+    const updatedMembership = await testPrisma.membership.findUnique({
+      where: { id: existingMembership.id }
+    });
+    const allMemberships = await testPrisma.membership.findMany({
+      where: { userId: member.id, gymId: gym.id }
+    });
+    const expectedEndDate = new Date(currentEndDate);
+    expectedEndDate.setDate(expectedEndDate.getDate() + renewalPackage.durationDays);
+
+    expect(result).toBe(true);
+    expect(updatedTransaction.status).toBe('PAID');
+    expect(updatedTransaction.membershipId).toBe(existingMembership.id);
+    expect(allMemberships).toHaveLength(1);
+    expect(updatedMembership.packageId).toBe(renewalPackage.id);
+    expect(updatedMembership.status).toBe('AKTIF');
+    expect(updatedMembership.endDate.getTime()).toBe(expectedEndDate.getTime());
+    expect(updatedMembership.endDate.getTime()).toBeGreaterThan(currentEndDate.getTime());
+  });
+
   test('notificationSnap should process valid membership webhook using signature verification', async () => {
     const owner = await createOwner();
     const member = await createMember();

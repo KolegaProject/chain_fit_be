@@ -246,6 +246,81 @@ describe('Transaction HTTP integration', () => {
     expect(cashflows).toHaveLength(1);
   });
 
+  test('POST /api/v1/transaction/webhook-midtrans should extend active membership when renewal payment succeeds', async () => {
+    const { user: owner } = await createAuthenticatedOwner({ password: 'Password123!' });
+    const { user: member } = await createAuthenticatedMember({ password: 'Password123!' });
+    const gym = await createGym(owner.id, { name: 'Renewal Gym', verified: 'APPROVED' });
+    const currentPackage = await createMembershipPackage(gym.id, {
+      name: 'Current Package',
+      price: '100000.00',
+      durationDays: 30
+    });
+    const renewalPackage = await createMembershipPackage(gym.id, {
+      name: 'Renewal Package',
+      price: '120000.00',
+      durationDays: 30
+    });
+
+    const currentEndDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+    const existingMembership = await createMembership(member.id, gym.id, currentPackage.id, {
+      startDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      endDate: currentEndDate,
+      status: 'AKTIF'
+    });
+
+    const transaction = await createTransaction({
+      gymId: gym.id,
+      userId: member.id,
+      amount: '122000.00',
+      orderId: 'ORDER-RENEWAL-HTTP-1',
+      status: 'PENDING',
+      paymentMethod: null,
+      note: 'Membership package purchase: Renewal Package'
+    });
+
+    const payload = {
+      order_id: transaction.orderId,
+      status_code: '200',
+      gross_amount: '122000.00',
+      signature_key: createMidtransSignature(transaction.orderId, '200', '122000.00'),
+      transaction_status: 'settlement',
+      payment_type: 'qris',
+      fraud_status: 'accept',
+      metadata: {
+        type: 'membership',
+        packageId: renewalPackage.id,
+        gymId: gym.id,
+        userId: member.id,
+        transactionId: transaction.id
+      }
+    };
+
+    const request = await createRequest();
+    const response = await request
+      .post('/api/v1/transaction/webhook-midtrans')
+      .send(payload);
+
+    const updatedTransaction = await testPrisma.transaction.findUnique({ where: { id: transaction.id } });
+    const updatedMembership = await testPrisma.membership.findUnique({ where: { id: existingMembership.id } });
+    const memberships = await testPrisma.membership.findMany({
+      where: { userId: member.id, gymId: gym.id }
+    });
+    const expectedEndDate = new Date(currentEndDate);
+    expectedEndDate.setDate(expectedEndDate.getDate() + renewalPackage.durationDays);
+
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe('OK');
+    expect(response.body.data).toBe(true);
+    expect(updatedTransaction.status).toBe('PAID');
+    expect(updatedTransaction.paymentMethod).toBe('qris');
+    expect(updatedTransaction.membershipId).toBe(existingMembership.id);
+    expect(memberships).toHaveLength(1);
+    expect(updatedMembership.packageId).toBe(renewalPackage.id);
+    expect(updatedMembership.status).toBe('AKTIF');
+    expect(updatedMembership.endDate.getTime()).toBe(expectedEndDate.getTime());
+    expect(updatedMembership.endDate.getTime()).toBeGreaterThan(currentEndDate.getTime());
+  });
+
   test('GET /api/v1/transaction/history should return membership transaction history for authenticated member', async () => {
     const { user: owner } = await createAuthenticatedOwner({ password: 'Password123!' });
     const { user: member } = await createAuthenticatedMember({ password: 'Password123!' });
