@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeAll, afterAll, beforeEach, jest } from '@jest/globals';
 import { cleanupDatabase, connectTestDatabase, disconnectTestDatabase, getTestDatabaseUrl, testPrisma } from '../helpers/db-test-helper.js';
-import { createGym, createMember, createMembership, createMembershipPackage, createOwner, createPenjaga } from '../helpers/seed-factory.js';
+import { createGym, createMember, createMembership, createMembershipPackage, createOwner, createPenjaga, createAdmin } from '../helpers/seed-factory.js';
 import { matchPassword } from '../../src/utils/passwordConfig.js';
 import { parseJWT } from '../../src/utils/jwtTokenConfig.js';
 
@@ -144,6 +144,25 @@ describe('AuthService integration (MySQL/Prisma)', () => {
     expect(accessPayload.id.id).toBe(penjaga.id);
     expect(accessPayload.id.account_type).toBe('PENJAGA');
     expect(refreshPayload.id).toBe(penjaga.id);
+  });
+
+  test('login should return access and refresh tokens for ADMIN credentials', async () => {
+    const plainPassword = 'Password123!';
+    const admin = await createAdmin({
+      username: 'login_admin',
+      email: 'login_admin@example.com',
+      password: plainPassword
+    });
+
+    const response = await AuthService.login('login_admin', plainPassword);
+    const accessPayload = parseJWT(response.access_token);
+    const refreshPayload = parseJWT(response.refresh_token);
+
+    expect(response).toHaveProperty('access_token');
+    expect(response).toHaveProperty('refresh_token');
+    expect(accessPayload.id.id).toBe(admin.id);
+    expect(accessPayload.id.account_type).toBe('ADMIN');
+    expect(refreshPayload.id).toBe(admin.id);
   });
 
   test('updatePasswordProfile should update stored password hash in test database', async () => {
