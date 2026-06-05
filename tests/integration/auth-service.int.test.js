@@ -1,7 +1,8 @@
 import { describe, test, expect, beforeAll, afterAll, beforeEach, jest } from '@jest/globals';
 import { cleanupDatabase, connectTestDatabase, disconnectTestDatabase, getTestDatabaseUrl, testPrisma } from '../helpers/db-test-helper.js';
-import { createGym, createMember, createMembership, createMembershipPackage, createOwner } from '../helpers/seed-factory.js';
+import { createGym, createMember, createMembership, createMembershipPackage, createOwner, createPenjaga } from '../helpers/seed-factory.js';
 import { matchPassword } from '../../src/utils/passwordConfig.js';
+import { parseJWT } from '../../src/utils/jwtTokenConfig.js';
 
 process.env.DATABASE_URL = getTestDatabaseUrl();
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'integration-test-secret';
@@ -84,6 +85,65 @@ describe('AuthService integration (MySQL/Prisma)', () => {
     ).rejects.toMatchObject({
       name: 'ValidationError'
     });
+  });
+
+  test('login should return access and refresh tokens for MEMBER credentials', async () => {
+    const plainPassword = 'Password123!';
+    const member = await createMember({
+      username: 'login_member',
+      email: 'login_member@example.com',
+      password: plainPassword
+    });
+
+    const response = await AuthService.login('login_member', plainPassword);
+    const accessPayload = parseJWT(response.access_token);
+    const refreshPayload = parseJWT(response.refresh_token);
+
+    expect(response).toHaveProperty('access_token');
+    expect(response).toHaveProperty('refresh_token');
+    expect(accessPayload.id.id).toBe(member.id);
+    expect(accessPayload.id.account_type).toBe('MEMBER');
+    expect(refreshPayload.id).toBe(member.id);
+  });
+
+  test('login should return access and refresh tokens for OWNER credentials', async () => {
+    const plainPassword = 'Password123!';
+    const owner = await createOwner({
+      username: 'login_owner',
+      email: 'login_owner@example.com',
+      password: plainPassword
+    });
+
+    const response = await AuthService.login('login_owner', plainPassword);
+    const accessPayload = parseJWT(response.access_token);
+    const refreshPayload = parseJWT(response.refresh_token);
+
+    expect(response).toHaveProperty('access_token');
+    expect(response).toHaveProperty('refresh_token');
+    expect(accessPayload.id.id).toBe(owner.id);
+    expect(accessPayload.id.account_type).toBe('OWNER');
+    expect(refreshPayload.id).toBe(owner.id);
+  });
+
+  test('login should return access and refresh tokens for PENJAGA credentials', async () => {
+    const plainPassword = 'Password123!';
+    const owner = await createOwner();
+    const gym = await createGym(owner.id);
+    const penjaga = await createPenjaga(gym.id, {
+      username: 'login_penjaga',
+      email: 'login_penjaga@example.com',
+      password: plainPassword
+    });
+
+    const response = await AuthService.login('login_penjaga', plainPassword);
+    const accessPayload = parseJWT(response.access_token);
+    const refreshPayload = parseJWT(response.refresh_token);
+
+    expect(response).toHaveProperty('access_token');
+    expect(response).toHaveProperty('refresh_token');
+    expect(accessPayload.id.id).toBe(penjaga.id);
+    expect(accessPayload.id.account_type).toBe('PENJAGA');
+    expect(refreshPayload.id).toBe(penjaga.id);
   });
 
   test('updatePasswordProfile should update stored password hash in test database', async () => {
