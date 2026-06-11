@@ -230,4 +230,75 @@ describe('EquipmentService integration (MySQL/Prisma)', () => {
     expect(response).toEqual({ message: 'Equipment deleted successfully' });
     expect(deletedEquipment).toBeNull();
   });
+
+  test('updateEquipment should reject jumlah when value is abc', async () => {
+    const { owner, gym } = await setupEquipmentFlow();
+
+    const equipment = await testPrisma.equipment.create({
+      data: {
+        gymId: gym.id,
+        name: 'Adjustable Dumbbell',
+        healthStatus: 'BAIK',
+        jumlah: 3,
+        description: 'Weight equipment'
+      }
+    });
+
+    await expect(
+      EquipmentService.updateEquipment(
+        equipment.id,
+        gym.id,
+        owner.id,
+        {
+          name: 'Adjustable Dumbbell',
+          healthStatus: 'BAIK',
+          videoURL: 'https://video.test/dumbbell',
+          jumlah: 'abc',
+          description: 'Invalid jumlah value'
+        },
+        undefined
+      )
+    ).rejects.toThrow();
+
+    const persistedEquipment = await testPrisma.equipment.findUnique({
+      where: { id: equipment.id }
+    });
+
+    expect(persistedEquipment.jumlah).toBe(3);
+  });
+
+  test('updateEquipment should allow jumlah when value is a non-negative number', async () => {
+    const { owner, gym } = await setupEquipmentFlow();
+
+    const equipment = await testPrisma.equipment.create({
+      data: {
+        gymId: gym.id,
+        name: 'Smith Machine',
+        healthStatus: 'BAIK',
+        jumlah: 3,
+        description: 'Strength equipment'
+      }
+    });
+
+    const updatedEquipment = await EquipmentService.updateEquipment(
+      equipment.id,
+      gym.id,
+      owner.id,
+      {
+        name: 'Smith Machine',
+        healthStatus: 'BAIK',
+        videoURL: 'https://video.test/smith-machine',
+        jumlah: 0,
+        description: 'Updated jumlah to non-negative number'
+      },
+      undefined
+    );
+
+    const persistedEquipment = await testPrisma.equipment.findUnique({
+      where: { id: equipment.id }
+    });
+
+    expect(updatedEquipment.jumlah).toBe(0);
+    expect(persistedEquipment.jumlah).toBe(0);
+  });
 });
