@@ -211,4 +211,73 @@ describe('Equipment HTTP integration', () => {
     expect(response.body.data[0].name).toBe('Lat Pulldown');
     expect(response.body.data[0].healthStatus).toBe('BAIK');
   });
+
+  test('createEquipment should allow equipment name with less than 191 characters', async () => {
+    const { owner, gym } = await setupEquipmentFlow();
+    const equipmentName = 'A'.repeat(190);
+
+    const equipment = await EquipmentService.createEquipment(
+      gym.id,
+      owner.id,
+      {
+        name: equipmentName,
+        videoURL: 'https://video.test/equipment-less-than-191',
+        jumlah: 1,
+        description: 'Equipment name length is less than 191 characters'
+      },
+      undefined
+    );
+
+    const persistedEquipment = await testPrisma.equipment.findUnique({
+      where: { id: equipment.id }
+    });
+
+    expect(persistedEquipment).not.toBeNull();
+    expect(persistedEquipment.name).toHaveLength(190);
+    expect(persistedEquipment.name).toBe(equipmentName);
+  });
+
+  test('createEquipment should allow equipment name with exactly 191 characters', async () => {
+    const { owner, gym } = await setupEquipmentFlow();
+    const equipmentName = 'A'.repeat(191);
+
+    const equipment = await EquipmentService.createEquipment(
+      gym.id,
+      owner.id,
+      {
+        name: equipmentName,
+        videoURL: 'https://video.test/equipment-191',
+        jumlah: 1,
+        description: 'Equipment name length is exactly 191 characters'
+      },
+      undefined
+    );
+
+    const persistedEquipment = await testPrisma.equipment.findUnique({
+      where: { id: equipment.id }
+    });
+
+    expect(persistedEquipment).not.toBeNull();
+    expect(persistedEquipment.name).toHaveLength(191);
+    expect(persistedEquipment.name).toBe(equipmentName);
+  });
+
+  test('createEquipment should reject equipment name with more than 191 characters', async () => {
+    const { owner, gym } = await setupEquipmentFlow();
+    const equipmentName = 'A'.repeat(192);
+
+    await expect(
+      EquipmentService.createEquipment(
+        gym.id,
+        owner.id,
+        {
+          name: equipmentName,
+          videoURL: 'https://video.test/equipment-more-than-191',
+          jumlah: 1,
+          description: 'Equipment name length is more than 191 characters'
+        },
+        undefined
+      )
+    ).rejects.toThrow();
+  });
 });
