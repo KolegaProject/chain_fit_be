@@ -75,7 +75,14 @@ class GymService {
             const checkGym = await tx.gym.findFirst({
                 where: {
                     id,
-                    ownerId: userId
+                    OR: [
+                        {ownerId: userId},
+                        {staff: {
+                            some: {
+                                id: userId
+                            }
+                        }}
+                    ]
                 },
                 include: {
                     gymImage: true
