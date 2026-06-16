@@ -343,6 +343,13 @@ class GymRoutes extends BaseRoutes {
     );
 
     // ========== Detail & delete by id  ==========
+    this.router.get("/:id/capacity", [
+      authTokenMiddleware.authenticate,
+      authTokenMiddleware.authorizeUser(["OWNER", "MEMBER", "PENJAGA"]),
+      validateCredentials(gymSchema, "params"),
+      tryCatch(gymController.capacity),
+    ]);
+
     this.router.get("/:id", [
       authTokenMiddleware.authenticate,
       authTokenMiddleware.authorizeUser(["OWNER", "MEMBER", "PENJAGA"]),

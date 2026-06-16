@@ -55,6 +55,15 @@ class GymController {
         return successResponse(res, gym);
     }
     
+    async capacity(req, res){
+        const id = parseInt(req.params.id);
+        const userId = req.user.id;
+        const role = req.user.role;
+        const capacityData = await gymService.getGymCapacityById(id, userId, role);
+        return successResponse(res, capacityData);
+    
+    }
+
     async show(req, res){
         const id = parseInt(req.params.id);
         const gym = await gymService.getGymById(id);

@@ -172,6 +172,40 @@ class GymService {
         return gym;
     }
 
+    async getGymCapacityById(id, userId, role) {
+        if (role === "OWNER") {
+            const isOwner = await prisma.gym.findFirst({ where: { id, ownerId: userId } });
+            if (!isOwner) throw BaseError.forbidden("You are not the owner of this gym");
+        } else if (role === "PENJAGA") {
+            const isPenjaga = await prisma.user.findFirst({ where: { id: userId, gymId: id, role: "PENJAGA" } });
+            if (!isPenjaga) throw BaseError.forbidden("You are not authorized for this gym");
+        } else if (role === "MEMBER") {
+            const isMember = await prisma.membership.findFirst({ where: { userId, gymId: id, status: "AKTIF" } });
+            if (!isMember) throw BaseError.forbidden("You do not have an active membership for this gym");
+        }
+
+        const gym = await prisma.gym.findFirst({
+            where: { id },
+            select: { maxCapacity: true }
+        });
+
+        if (!gym) throw BaseError.notFound("Gym not found");
+
+        const activeUsersCount = await prisma.attendance.count({
+            where: { gymId: id, checkOutAt: null }
+        });
+
+        const availableSpace = gym.maxCapacity - activeUsersCount;
+
+        return {
+            maxCapacity: gym.maxCapacity,
+            currentUsers: activeUsersCount,
+            availableSpace: availableSpace < 0 ? 0 : availableSpace,
+            status: availableSpace <= 0 ? "FULL" : (availableSpace <= 5 ? "ALMOST_FULL" : "AVAILABLE")
+        };
+    
+    }
+
     async getGymById(id) {
         const gym = await prisma.gym.findFirst({
             where: {
