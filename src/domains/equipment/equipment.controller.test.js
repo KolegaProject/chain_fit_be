@@ -221,4 +221,143 @@ describe('EquipmentController', () => {
       name: 'Cable Machine'
     });
   });
+
+  test('WBT IP1 - update should return success when jumlah is provided', async () => {
+    // IP1 = 1 - 2 - 3 - 4 - 6 - 7 - 8 - 10 - 11
+    // jumlah != null -> Number(jmlRow) -> service success -> successResponse
+
+    jest.spyOn(equipmentService, 'updateEquipment').mockResolvedValue({
+      id: 5,
+      name: 'Treadmill',
+      healthStatus: 'BAIK'
+    });
+
+    const req = {
+      params: { id: '7', equipId: '5' },
+      user: { id: 10 },
+      files: {
+        image: [{ originalname: 'treadmill.jpg' }]
+      },
+      body: {
+        name: 'Treadmill',
+        healthStatus: 'BAIK',
+        videoURL: 'https://video.example/treadmill',
+        jumlah: '4',
+        description: 'Cardio machine'
+      }
+    };
+
+    const res = createMockRes();
+
+    await EquipmentController.update(req, res);
+
+    expect(equipmentService.updateEquipment).toHaveBeenCalledWith(
+      5,
+      7,
+      10,
+      {
+        name: 'Treadmill',
+        healthStatus: 'BAIK',
+        videoURL: 'https://video.example/treadmill',
+        jumlah: 4,
+        description: 'Cardio machine'
+      },
+      [{ originalname: 'treadmill.jpg' }]
+    );
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.jsonPayload.data).toEqual({
+      id: 5,
+      name: 'Treadmill',
+      healthStatus: 'BAIK'
+    });
+  });
+
+  test('WBT IP2 - update should return success when jumlah is null', async () => {
+    // IP2 = 1 - 2 - 3 - 4 - 5 - 7 - 8 - 10 - 11
+    // jumlah == null -> jumlah undefined -> service success -> successResponse
+
+    jest.spyOn(equipmentService, 'updateEquipment').mockResolvedValue({
+      id: 6,
+      name: 'Rowing Machine'
+    });
+
+    const req = {
+      params: { id: '8', equipId: '6' },
+      user: { id: 77 },
+      body: {
+        name: 'Rowing Machine',
+        healthStatus: 'RUSAK',
+        videoURL: 'https://video.example/row',
+        jumlah: null,
+        description: 'Broken machine'
+      }
+    };
+
+    const res = createMockRes();
+
+    await EquipmentController.update(req, res);
+
+    expect(equipmentService.updateEquipment).toHaveBeenCalledWith(
+      6,
+      8,
+      77,
+      {
+        name: 'Rowing Machine',
+        healthStatus: 'RUSAK',
+        videoURL: 'https://video.example/row',
+        jumlah: undefined,
+        description: 'Broken machine'
+      },
+      undefined
+    );
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.jsonPayload.data).toEqual({
+      id: 6,
+      name: 'Rowing Machine'
+    });
+  });
+
+  test('WBT IP3 - update should throw error when service returns null', async () => {
+    // IP3 = 1 - 2 - 3 - 4 - 6 - 7 - 8 - 9 - 11
+    // jumlah != null -> Number(jmlRow) -> service returns null -> throw Error
+
+    jest.spyOn(equipmentService, 'updateEquipment').mockResolvedValue(null);
+
+    const req = {
+      params: { id: '9', equipId: '15' },
+      user: { id: 88 },
+      body: {
+        name: 'Leg Press',
+        healthStatus: 'BAIK',
+        videoURL: 'https://video.example/leg-press',
+        jumlah: '2',
+        description: 'Leg machine'
+      }
+    };
+
+    const res = createMockRes();
+
+    await expect(EquipmentController.update(req, res))
+      .rejects
+      .toThrow('Failed to update equipment');
+
+    expect(equipmentService.updateEquipment).toHaveBeenCalledWith(
+      15,
+      9,
+      88,
+      {
+        name: 'Leg Press',
+        healthStatus: 'BAIK',
+        videoURL: 'https://video.example/leg-press',
+        jumlah: 2,
+        description: 'Leg machine'
+      },
+      undefined
+    );
+
+    expect(res.status).not.toHaveBeenCalled();
+    expect(res.json).not.toHaveBeenCalled();
+  });
 });
