@@ -84,6 +84,11 @@ describe('MembershipTransactionService integration (MySQL/Prisma)', () => {
       status: 'AKTIF'
     });
 
+    createTransactionMock.mockResolvedValue({
+      token: 'snap-token-queue',
+      redirect_url: 'https://snap.test/redirect-queue'
+    });
+
     const result = await MembershipTransactionService.createSnap(membershipPackage.id, member.id, gym.id);
     expect(result).toHaveProperty('token');
     expect(result).toHaveProperty('redirectUrl');
