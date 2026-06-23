@@ -100,7 +100,7 @@ describe('Transaction HTTP integration', () => {
     expect(createdTransaction.orderId).toBe(response.body.data.orderId);
   });
 
-  test('POST /api/v1/transaction/create-snap should reject member with still-active membership', async () => {
+  test('POST /api/v1/transaction/create-snap should allow member with still-active membership (Queue Mode)', async () => {
     const { user: owner } = await createAuthenticatedOwner({ password: 'Password123!' });
     const { user: member } = await createAuthenticatedMember({ password: 'Password123!' });
     const gym = await createGym(owner.id, { name: 'Active Membership Snap Gym', verified: 'APPROVED' });
@@ -120,10 +120,9 @@ describe('Transaction HTTP integration', () => {
         gymId: gym.id
       });
 
-    expect(response.status).toBe(400);
-    expect(response.body.status).toBe('Bad Request');
-    expect(response.body.errors.message).toBe('user already has an active membership');
-    expect(snap.createTransaction).not.toHaveBeenCalled();
+    expect(response.status).toBe(201);
+    expect(response.body.status).toBe('Created');
+    expect(snap.createTransaction).toHaveBeenCalled();
   });
 
   test('POST /api/v1/transaction/webhook-midtrans should settle payment and create membership + cashflow', async () => {
@@ -300,23 +299,23 @@ describe('Transaction HTTP integration', () => {
       .post('/api/v1/transaction/webhook-midtrans')
       .send(payload);
 
-    const updatedTransaction = await testPrisma.transaction.findUnique({ where: { id: transaction.id } });
-    const updatedMembership = await testPrisma.membership.findUnique({ where: { id: existingMembership.id } });
-    const memberships = await testPrisma.membership.findMany({
-      where: { userId: member.id, gymId: gym.id }
-    });
-    const expectedEndDate = new Date(currentEndDate);
-    expectedEndDate.setDate(expectedEndDate.getDate() + renewalPackage.durationDays);
-
     expect(response.status).toBe(200);
     expect(response.body.status).toBe('OK');
     expect(response.body.data).toBe(true);
+
+    const updatedTransaction = await testPrisma.transaction.findUnique({ where: { id: transaction.id } });
+    const allMemberships = await testPrisma.membership.findMany({ where: { userId: member.id, gymId: gym.id } });
+    const updatedMembership = allMemberships.find(m => m.id === updatedTransaction.membershipId);
+
+    const expectedEndDate = new Date(currentEndDate);
+    expectedEndDate.setDate(expectedEndDate.getDate() + renewalPackage.durationDays);
+
     expect(updatedTransaction.status).toBe('PAID');
     expect(updatedTransaction.paymentMethod).toBe('qris');
-    expect(updatedTransaction.membershipId).toBe(existingMembership.id);
-    expect(memberships).toHaveLength(1);
+    expect(updatedTransaction.membershipId).not.toBe(existingMembership.id);
+    expect(allMemberships).toHaveLength(2); // History is kept
     expect(updatedMembership.packageId).toBe(renewalPackage.id);
-    expect(updatedMembership.status).toBe('AKTIF');
+    expect(updatedMembership.status).toBe('TIDAK'); // Queue system (future start date)
     expect(updatedMembership.endDate.getTime()).toBe(expectedEndDate.getTime());
     expect(updatedMembership.endDate.getTime()).toBeGreaterThan(currentEndDate.getTime());
   });
