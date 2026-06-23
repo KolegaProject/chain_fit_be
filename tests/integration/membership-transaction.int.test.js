@@ -73,7 +73,7 @@ describe('MembershipTransactionService integration (MySQL/Prisma)', () => {
     expect(Number(transaction.amount)).toBe(152000);
   });
 
-  test('createSnap should reject when user still has active membership beyond renewal threshold', async () => {
+  test('createSnap should allow when user still has active membership (Queue System)', async () => {
     const owner = await createOwner();
     const member = await createMember();
     const gym = await createGym(owner.id);
@@ -84,11 +84,9 @@ describe('MembershipTransactionService integration (MySQL/Prisma)', () => {
       status: 'AKTIF'
     });
 
-    await expect(
-      MembershipTransactionService.createSnap(membershipPackage.id, member.id, gym.id)
-    ).rejects.toMatchObject({
-      message: 'user already has an active membership'
-    });
+    const result = await MembershipTransactionService.createSnap(membershipPackage.id, member.id, gym.id);
+    expect(result).toHaveProperty('token');
+    expect(result).toHaveProperty('redirectUrl');
   });
 
   test('updateTransactionStatus should mark settlement as PAID, create membership, and create gym cashflow', async () => {
@@ -213,12 +211,15 @@ describe('MembershipTransactionService integration (MySQL/Prisma)', () => {
 
     expect(result).toBe(true);
     expect(updatedTransaction.status).toBe('PAID');
-    expect(updatedTransaction.membershipId).toBe(existingMembership.id);
-    expect(allMemberships).toHaveLength(1);
-    expect(updatedMembership.packageId).toBe(renewalPackage.id);
-    expect(updatedMembership.status).toBe('AKTIF');
-    expect(updatedMembership.endDate.getTime()).toBe(expectedEndDate.getTime());
-    expect(updatedMembership.endDate.getTime()).toBeGreaterThan(currentEndDate.getTime());
+    expect(updatedTransaction.membershipId).not.toBe(existingMembership.id);
+    expect(allMemberships).toHaveLength(2); // History is kept
+    
+    // Find the new membership created
+    const newMembership = allMemberships.find(m => m.id === updatedTransaction.membershipId);
+    expect(newMembership.packageId).toBe(renewalPackage.id);
+    expect(newMembership.status).toBe('TIDAK'); // Queue mode (pending start date)
+    expect(newMembership.endDate.getTime()).toBe(expectedEndDate.getTime());
+    expect(newMembership.endDate.getTime()).toBeGreaterThan(currentEndDate.getTime());
   });
 
   test('notificationSnap should process valid membership webhook using signature verification', async () => {
