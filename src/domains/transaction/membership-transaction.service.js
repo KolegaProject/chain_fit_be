@@ -29,21 +29,18 @@ class MembershipTransactionService {
         throw BaseError.notFound("membership package not found");
       }
 
-      // Cek apakah user sudah punya membership AKTIF di gym ini
-      const existingMembership = await tx.membership.findFirst({
+      // Cek apakah user sudah punya membership AKTIF di gym ini (Hapus validasi reject, biarkan lolos untuk antrean)
+      /* 
+      const existingMembershipCheck = await tx.membership.findFirst({
         where: {
           userId: userId,
           gymId: gymId,
           status: "AKTIF",
-          endDate: {
-            gte: renewAllowedFrom, // masih berlaku
-          },
-        },
+          endDate: { gte: renewAllowedFrom }
+        }
       });
-
-      if (existingMembership) {
-        throw BaseError.badRequest("user already has an active membership");
-      }
+      if (existingMembershipCheck) throw BaseError.badRequest("user already has an active membership");
+      */
 
       // Hitung harga + admin fee
       const adminFee = 2000;
@@ -258,30 +255,20 @@ class MembershipTransactionService {
       const newEndDate = new Date(baseDate);
       newEndDate.setDate(newEndDate.getDate() + membershipPackage.durationDays);
 
-      let membershipRecord;
-      if (existingMembership) {
-        // update membership
-        membershipRecord = await tx.membership.update({
-          where: { id: existingMembership.id },
-          data: {
-            endDate: newEndDate,
-            status: "AKTIF",
-            packageId: membershipPackage.id,
-          },
-        });
-      } else {
-        // Buat Membership baru
-        membershipRecord = await tx.membership.create({
-          data: {
-            userId: updatedTx.userId,
-            gymId: updatedTx.gymId,
-            packageId: membershipPackage.id,
-            startDate: now,
-            endDate: newEndDate,
-            status: "AKTIF",
-          },
-        });
-      }
+      // Selalu buat Membership baru (jangan timpa history)
+      // Jika baseDate di masa depan, statusnya TIDAK (Pending Queue), jika hari ini status AKTIF
+      const membershipStatus = baseDate > now ? "TIDAK" : "AKTIF";
+
+      const membershipRecord = await tx.membership.create({
+        data: {
+          userId: updatedTx.userId,
+          gymId: updatedTx.gymId,
+          packageId: membershipPackage.id,
+          startDate: baseDate,
+          endDate: newEndDate,
+          status: membershipStatus,
+        },
+      });
 
       // Update transaction.membershipId
       await tx.transaction.update({

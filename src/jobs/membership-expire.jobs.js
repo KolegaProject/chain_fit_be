@@ -12,12 +12,19 @@ export async function expiresMembership(){
     if (!got) return { skipped: true, reason: "locked_by_another_runner" };
 
     try {
-      const res = await tx.membership.updateMany({
+      // 1. Matikan paket yang sudah kadaluarsa
+      const resExpire = await tx.membership.updateMany({
         where: { status: "AKTIF", endDate: { lt: now } },
         data: { status: "TIDAK" },
       });
 
-      return { skipped: false, updated: res.count };
+      // 2. Aktifkan paket antrean yang tanggal mulainya sudah tiba
+      const resActivate = await tx.membership.updateMany({
+        where: { status: "TIDAK", startDate: { lte: now }, endDate: { gt: now } },
+        data: { status: "AKTIF" },
+      });
+
+      return { skipped: false, expiredCount: resExpire.count, activatedCount: resActivate.count };
     } finally {
       await tx.$queryRaw`SELECT RELEASE_LOCK('job_expire_memberships')`;
     }
